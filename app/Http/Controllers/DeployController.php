@@ -118,6 +118,12 @@ class DeployController extends Controller
             }
 
             if (file_exists($composerPhar)) {
+                // Supprimer le lock pour forcer une résolution complète
+                $lockFile = $basePath . '/composer.lock';
+                if (file_exists($lockFile)) {
+                    @unlink($lockFile);
+                }
+
                 // Vider le cache composer pour forcer la résolution des nouvelles versions
                 $clearCache = new Process([$this->getPhpBinary(), 'composer.phar', 'clear-cache', '--no-interaction'], $basePath);
                 $clearCache->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
