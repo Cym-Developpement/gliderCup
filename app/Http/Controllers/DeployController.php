@@ -118,20 +118,18 @@ class DeployController extends Controller
             }
 
             if (file_exists($composerPhar)) {
-                // Supprimer les paquets ycdev pour forcer la réinstallation avec le bon autoload
-                foreach (['paper-size', 'php-osm-static-aero'] as $pkg) {
-                    $pkgDir = $basePath . '/vendor/ycdev/' . $pkg;
-                    if (is_dir($pkgDir)) {
-                        (new Process(['rm', '-rf', $pkgDir]))->run();
-                    }
-                }
-                @unlink($basePath . '/composer.lock');
+                // D'abord installer les paquets manquants depuis le lock
+                $install = new Process([$this->getPhpBinary(), 'composer.phar', 'install', '--no-dev', '--no-interaction', '--optimize-autoloader', '--ignore-platform-reqs'], $basePath);
+                $install->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
+                $install->setTimeout(300);
+                $install->run();
 
+                // Puis mettre à jour
                 $composer = new Process([$this->getPhpBinary(), 'composer.phar', 'update', '--no-dev', '--no-interaction', '--optimize-autoloader', '--ignore-platform-reqs'], $basePath);
                 $composer->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
                 $composer->setTimeout(300);
                 $composer->run();
-                $composerOutput = 'STDOUT: ' . $composer->getOutput() . "\nSTDERR: " . $composer->getErrorOutput();
+                $composerOutput = $composer->isSuccessful() ? $composer->getOutput() : 'Erreur composer : ' . $composer->getErrorOutput();
             }
 
             // Vider le cache après composer update
