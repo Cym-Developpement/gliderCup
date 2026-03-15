@@ -7,9 +7,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CupExport implements GpsExportInterface
 {
-    public static function export(Collection $points): StreamedResponse
+    public static function export(Collection $points, string $competitionName): StreamedResponse
     {
-        $filename = 'points_virage.cup';
+        $filename = \Illuminate\Support\Str::slug($competitionName) . '.cup';
 
         return response()->streamDownload(function () use ($points) {
             $header = 'name,code,country,lat,lon,elev,style,rwydir,rwylen,freq,desc';

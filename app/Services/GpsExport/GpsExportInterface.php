@@ -10,5 +10,5 @@ interface GpsExportInterface
     /**
      * Génère et retourne la réponse de téléchargement pour le format donné.
      */
-    public static function export(Collection $points): StreamedResponse;
+    public static function export(Collection $points, string $competitionName): StreamedResponse;
 }

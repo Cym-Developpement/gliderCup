@@ -47,12 +47,15 @@ class ExportGpsController extends Controller
             abort(404, "Format d'export inconnu : $format");
         }
 
-        $competition = Competition::firstOrFail();
+        $competition = Competition::active();
+        if (!$competition) {
+            abort(404, 'Aucune compétition active.');
+        }
         $points = PointVirage::where('competition_id', $competition->id)->get();
 
         /** @var GpsExportInterface $exportClass */
         $exportClass = static::$formats[$format];
 
-        return $exportClass::export($points);
+        return $exportClass::export($points, $competition->nom);
     }
 }
