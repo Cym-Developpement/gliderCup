@@ -1768,10 +1768,16 @@
         }
 
         // Créer un marqueur pour un point
-        function creerMarqueur(point) {
+        function creerMarqueur(point, numero) {
             const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], point.lat, point.lng).toFixed(1) : null;
-            const marker = L.marker([point.lat, point.lng]).addTo(cartePointsVirage)
-                .bindPopup(`<b>${point.nom}</b><br>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}`);
+            const icon = L.icon({
+                iconUrl: `/img/marker/${numero}`,
+                iconSize: [40, 35],
+                iconAnchor: [20, 35],
+                popupAnchor: [0, -35],
+            });
+            const marker = L.marker([point.lat, point.lng], { icon }).addTo(cartePointsVirage)
+                .bindPopup(`<b>#${numero} ${point.nom}</b><br>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}`);
             return marker;
         }
 
@@ -1851,12 +1857,10 @@
                             const idx = pointsVirage.findIndex(p => String(p.id) === String(id));
                             if (idx !== -1) {
                                 if (pointsVirage[idx].marker) cartePointsVirage.removeLayer(pointsVirage[idx].marker);
-                                pt.marker = creerMarqueur(pt);
                                 pointsVirage[idx] = pt;
                             }
                         } else {
                             // Nouveau point
-                            pt.marker = creerMarqueur(pt);
                             pointsVirage.push(pt);
                         }
                         rafraichirListePoints();
@@ -1895,8 +1899,14 @@
             rafraichirListePoints();
         }
 
-        // Rafraîchir la liste dans le panneau droit
+        // Rafraîchir la liste dans le panneau droit et recréer les marqueurs
         function rafraichirListePoints() {
+            // Recréer tous les marqueurs avec les bons numéros
+            pointsVirage.forEach((p, i) => {
+                if (p.marker) cartePointsVirage.removeLayer(p.marker);
+                p.marker = creerMarqueur(p, i + 1);
+            });
+
             const container = document.getElementById('listePointsVirage');
             if (!container) return;
 
@@ -1906,12 +1916,13 @@
             }
 
             container.innerHTML = pointsVirage.map((p, i) => {
+                const num = i + 1;
                 const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], p.lat, p.lng).toFixed(1) : null;
                 return `
                     <div class="bg-gray-50 p-2 rounded border border-gray-200">
                         <div class="flex justify-between items-start">
                             <div class="cursor-pointer flex-1" onclick="cartePointsVirage.setView([${p.lat}, ${p.lng}], 13); pointsVirage[${i}].marker.openPopup();">
-                                <div class="font-semibold text-gray-800">${p.nom}</div>
+                                <div class="font-semibold text-gray-800"><span class="text-blue-600">#${num}</span> ${p.nom}</div>
                                 <div class="text-xs text-gray-500">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
                                 ${dist ? `<div class="text-xs text-blue-600">${dist} km de la base</div>` : ''}
                                 ${p.description ? `<div class="text-xs text-gray-600 mt-1 truncate">${p.description}</div>` : ''}
@@ -2091,10 +2102,7 @@
 
                     // Charger les points de virage existants depuis le backend
                     const pointsExistants = await chargerPointsVirage();
-                    pointsExistants.forEach(p => {
-                        p.marker = creerMarqueur(p);
-                        pointsVirage.push(p);
-                    });
+                    pointsExistants.forEach(p => pointsVirage.push(p));
                     rafraichirListePoints();
                 } else {
                     // Si la carte existe déjà, recentrer sur l'aérodrome et forcer le redimensionnement

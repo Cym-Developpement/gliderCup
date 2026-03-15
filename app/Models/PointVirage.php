@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PointVirage extends Model
 {
+    protected $table = 'points_virage';
+
     protected $fillable = [
         'competition_id',
         'nom',

@@ -27,6 +27,11 @@ Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'send']
 Route::get('/api/openaip/data', [OpenAIPController::class, 'getData'])->name('openaip.data');
 Route::get('/api/openaip/tiles/{z}/{x}/{y}.png', [OpenAIPTileController::class, 'getTile'])->name('openaip.tiles');
 Route::get('/airport/{icao}', [\App\Http\Controllers\InscriptionController::class, 'getAirportData'])->name('airport.data');
+Route::get('/img/marker/{numero}', function ($numero) {
+    $svg = file_get_contents(public_path('img/path1.svg'));
+    $svg = str_replace('#PP', $numero, $svg);
+    return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
+})->where('numero', '[0-9]+')->name('marker.svg');
 
 // Route de déploiement (GET manuel + POST webhook GitHub)
 Route::match(['get', 'post'], '/update', [DeployController::class, 'update'])->name('deploy.update');
