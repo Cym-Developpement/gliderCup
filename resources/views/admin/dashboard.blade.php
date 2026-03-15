@@ -1752,6 +1752,7 @@
         let cartePointsVirage = null;
         let modeEdition = false;
         let clickHandler = null;
+        function escHandler(e) { if (e.key === 'Escape') desactiverModeEdition(); }
         let pointsVirage = []; // [{id, nom, description, image, lat, lng, marker}]
         let baseCoords = null;
         let pendingLatLng = null; // Coordonnées en attente lors de l'ajout
@@ -2150,6 +2151,15 @@
 
             modeEdition = true;
 
+            // Griser le bouton
+            const btn = document.getElementById('btnAjouterPoint');
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            btn.disabled = true;
+
+            // Écouter la touche Échap
+            document.addEventListener('keydown', escHandler);
+
             // Désactiver le déplacement et le zoom de la carte
             cartePointsVirage.dragging.disable();
             cartePointsVirage.scrollWheelZoom.disable();
@@ -2180,6 +2190,15 @@
         function desactiverModeEdition() {
             if (!modeEdition) return;
             modeEdition = false;
+
+            // Restaurer le bouton bleu
+            const btn = document.getElementById('btnAjouterPoint');
+            btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            btn.disabled = false;
+
+            // Retirer le listener Échap
+            document.removeEventListener('keydown', escHandler);
 
             if (cartePointsVirage) {
                 // Réactiver le déplacement et le zoom
