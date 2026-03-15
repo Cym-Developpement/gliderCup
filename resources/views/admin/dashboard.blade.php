@@ -1772,9 +1772,9 @@
             const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], point.lat, point.lng).toFixed(1) : null;
             const icon = L.icon({
                 iconUrl: `/img/marker/${numero}`,
-                iconSize: [40, 35],
-                iconAnchor: [20, 35],
-                popupAnchor: [0, -35],
+                iconSize: [70, 60],
+                iconAnchor: [35, 60],
+                popupAnchor: [0, -60],
             });
             const marker = L.marker([point.lat, point.lng], { icon }).addTo(cartePointsVirage)
                 .bindPopup(`<b>#${numero} ${point.nom}</b><br>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}`);
