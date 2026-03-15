@@ -2262,6 +2262,7 @@
             }
         });
     </script>
+    @include('admin._footer')
 </body>
 </html>
 
