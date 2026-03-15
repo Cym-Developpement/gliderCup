@@ -6,6 +6,7 @@ use App\Models\Competition;
 use App\Models\PointVirage;
 use App\Services\GpsExport\GpsExportInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ExportGpsController extends Controller
@@ -57,5 +58,22 @@ class ExportGpsController extends Controller
         $exportClass = static::$formats[$format];
 
         return $exportClass::export($points, $competition->nom);
+    }
+
+    public function downloadCarte()
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            abort(404, 'Aucune compétition active.');
+        }
+
+        $slug = Str::slug($competition->nom);
+        $relativePath = "maps/{$slug}.png";
+
+        if (!Storage::disk('public')->exists($relativePath)) {
+            abort(404, 'Carte non générée. Demandez à un administrateur de la régénérer.');
+        }
+
+        return response()->download(Storage::disk('public')->path($relativePath), "carte_{$slug}.png");
     }
 }

@@ -121,7 +121,11 @@
                             <button onclick="ouvrirModalCartePointsVirage(); closeDropdownActions();" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
                                 Gérer les points de virage
                             </button>
-                            
+
+                            <button id="btn-regenerer-carte" onclick="regenererCarte(); closeDropdownActions();" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                Régénérer la carte
+                            </button>
+
                             <button onclick="ouvrirModalMessageGroupe(); closeDropdownActions();" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
                                 Envoyer un message à tous
                             </button>
@@ -2039,6 +2043,36 @@
                 };
                 document.head.appendChild(leafletScript);
             });
+        }
+
+        async function regenererCarte() {
+            const btn = document.getElementById('btn-regenerer-carte');
+            const originalText = btn.textContent;
+            btn.textContent = 'Génération en cours...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('{{ route("admin.carte.regenerer") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await response.json();
+                if (data.success) {
+                    btn.textContent = 'Carte générée !';
+                    setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
+                } else {
+                    alert('Erreur : ' + (data.message || 'Erreur inconnue'));
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert('Erreur lors de la génération de la carte.');
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         }
 
         async function ouvrirModalCartePointsVirage() {

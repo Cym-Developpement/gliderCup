@@ -21,6 +21,7 @@ use App\Models\Message;
 use App\Models\MessageGroupe;
 use App\Models\PointVirage;
 use App\Models\Tache;
+use App\Services\MapGeneratorService;
 use App\Services\OpenAipService;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -1217,5 +1218,15 @@ class AdminController extends Controller
         $user->delete();
 
         return response()->json(['success' => true, 'message' => 'Administrateur supprimé.']);
+    }
+
+    public function regenererCarte()
+    {
+        try {
+            $path = MapGeneratorService::generate();
+            return response()->json(['success' => true, 'message' => 'Carte générée avec succès.', 'path' => $path]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }

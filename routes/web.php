@@ -36,6 +36,7 @@ Route::get('/img/marker/{numero}', function ($numero) {
 
 // Export GPS des points de virage
 Route::get('/export/gps/{format}', [ExportGpsController::class, 'export'])->name('export.gps');
+Route::get('/export/carte', [ExportGpsController::class, 'downloadCarte'])->name('export.carte');
 
 // Route de déploiement (GET manuel + POST webhook GitHub)
 Route::match(['get', 'post'], '/update', [DeployController::class, 'update'])->name('deploy.update');
@@ -100,4 +101,5 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/admins', [AdminController::class, 'getAdmins'])->name('admins.index');
     Route::post('/admins/{id?}', [AdminController::class, 'saveAdmin'])->name('admins.save');
     Route::delete('/admins/{id}', [AdminController::class, 'deleteAdmin'])->name('admins.delete');
+    Route::post('/carte/regenerer', [AdminController::class, 'regenererCarte'])->name('carte.regenerer');
 });
