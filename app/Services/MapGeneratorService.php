@@ -51,7 +51,7 @@ class MapGeneratorService
         Storage::disk('public')->makeDirectory('maps');
 
         $fullPath = Storage::disk('public')->path($relativePath);
-        $map->save($fullPath);
+        $map->saveImage($fullPath);
 
         return $relativePath;
     }
