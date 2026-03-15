@@ -17,6 +17,8 @@ public_html/hot
 
 storage/*.key
 .env
+.env_new
+.env.local
 Homestead.yaml
 Homestead.json
 /.vagrant
@@ -28,3 +30,6 @@ Homestead.json
 .env.production
 .phpactor.json
 auth.json
+
+# Cache avec secrets en clair
+bootstrap/cache/
