@@ -124,7 +124,7 @@
                     <!-- Ruban de prix -->
                     <div class="prix-ruban">
                         <span class="prix-item">
-                            <span class="prix-montant">100€</span> par planeur
+                            <span class="prix-montant">50€</span> par planeur
                         </span>
                         <span class="prix-item">
                             Adhésion <span class="prix-montant">50€</span> par pilote

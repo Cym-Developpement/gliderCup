@@ -84,7 +84,7 @@ class PaiementController extends Controller
         }
         
         // Calculer le montant total
-        $montantPlaneur = 100; // 100€ par planeur
+        $montantPlaneur = 50; // 50€ par planeur
         $montantAdhesion = 50; // 50€ d'adhésion par pilote
         $montantTotal = $isTestMode ? 1.00 : (($nombrePlaneurs * $montantPlaneur) + $montantAdhesion); // 1€ pour les tests
 
@@ -574,7 +574,7 @@ class PaiementController extends Controller
         return redirect()->route('paiement.public', ['identifiantVirement' => 'TEST-00000']);
 
         $nombrePlaneurs = 0;
-        $montantPlaneur = 100;
+        $montantPlaneur = 50;
         $montantAdhesion = 50;
         $montantTotal = 1.00; // Montant fixe de 1€ pour les tests
 
