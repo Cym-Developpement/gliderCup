@@ -1229,4 +1229,34 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
+    public function diagnosticAutoloader()
+    {
+        $basePath = base_path();
+        $file = $basePath . '/vendor/ycdev/paper-size/src/PaperSize.php';
+        $info = [
+            'file_exists' => file_exists($file),
+            'namespace_in_file' => null,
+            'class_exists_before' => class_exists('Ycdev\\PaperSize\\PaperSize', false),
+            'autoload_classmap_has_key' => null,
+            'opcache_status' => function_exists('opcache_get_status') ? @opcache_get_status(false) : 'N/A',
+        ];
+
+        if ($info['file_exists']) {
+            $content = file_get_contents($file);
+            preg_match('/^namespace\s+(.+?);/m', $content, $m);
+            $info['namespace_in_file'] = $m[1] ?? 'NOT FOUND';
+        }
+
+        $classmap = $basePath . '/vendor/composer/autoload_classmap.php';
+        if (file_exists($classmap)) {
+            $map = require $classmap;
+            $info['autoload_classmap_has_key'] = isset($map['Ycdev\\PaperSize\\PaperSize']);
+            $info['classmap_value'] = $map['Ycdev\\PaperSize\\PaperSize'] ?? null;
+        }
+
+        $info['class_exists_after_autoload'] = class_exists('Ycdev\\PaperSize\\PaperSize');
+
+        return response()->json($info);
+    }
 }

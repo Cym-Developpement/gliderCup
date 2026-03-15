@@ -102,4 +102,5 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::post('/admins/{id?}', [AdminController::class, 'saveAdmin'])->name('admins.save');
     Route::delete('/admins/{id}', [AdminController::class, 'deleteAdmin'])->name('admins.delete');
     Route::post('/carte/regenerer', [AdminController::class, 'regenererCarte'])->name('carte.regenerer');
+    Route::get('/diagnostic/autoloader', [AdminController::class, 'diagnosticAutoloader'])->name('diagnostic.autoloader');
 });
