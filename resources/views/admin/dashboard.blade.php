@@ -422,6 +422,45 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Todo list -->
+            <div class="mt-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Todo list</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-300">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 border-b text-left">Intitulé</th>
+                                <th class="px-4 py-2 border-b text-left">Personne</th>
+                                <th class="px-4 py-2 border-b text-left">Statut</th>
+                                <th class="px-4 py-2 border-b text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tachesBody">
+                            <tr>
+                                <td colspan="4" class="px-4 py-4 text-center text-gray-500">Chargement...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-gray-50">
+                                <td class="px-4 py-2 border-t">
+                                    <input type="text" id="newTacheIntitule" placeholder="Intitulé" class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </td>
+                                <td class="px-4 py-2 border-t">
+                                    <input type="text" id="newTachePersonne" placeholder="Personne" class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </td>
+                                <td class="px-4 py-2 border-t"></td>
+                                <td class="px-4 py-2 border-t">
+                                    <button onclick="ajouterTache()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm font-medium">
+                                        Ajouter
+                                    </button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -2686,7 +2725,120 @@
             }
         });
     </script>
+
+    <script>
+        // Todo list
+        const statutColors = {
+            'A faire': 'bg-red-100 text-red-800',
+            'En cours': 'bg-yellow-100 text-yellow-800',
+            'Fait': 'bg-green-100 text-green-800',
+        };
+        const statutCycle = ['A faire', 'En cours', 'Fait'];
+
+        function renderTaches(taches) {
+            const tbody = document.getElementById('tachesBody');
+            if (taches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500">Aucune tâche</td></tr>';
+                return;
+            }
+            tbody.innerHTML = taches.map(t => `
+                <tr>
+                    <td class="px-4 py-2 border-b">${escapeHtml(t.intitule)}</td>
+                    <td class="px-4 py-2 border-b">${escapeHtml(t.personne || '')}</td>
+                    <td class="px-4 py-2 border-b">
+                        <button onclick="cyclerStatut(${t.id}, '${t.statut}')" class="px-2 py-1 rounded-full text-xs font-semibold cursor-pointer ${statutColors[t.statut] || 'bg-gray-100 text-gray-800'}">
+                            ${escapeHtml(t.statut)}
+                        </button>
+                    </td>
+                    <td class="px-4 py-2 border-b">
+                        <button onclick="supprimerTache(${t.id})" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                            Supprimer
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function chargerTaches() {
+            fetch('{{ route("admin.taches.index") }}')
+                .then(r => r.json())
+                .then(taches => renderTaches(taches));
+        }
+
+        function ajouterTache() {
+            const intitule = document.getElementById('newTacheIntitule').value.trim();
+            const personne = document.getElementById('newTachePersonne').value.trim();
+            if (!intitule) return;
+
+            fetch('{{ route("admin.taches.save") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ intitule, personne }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('newTacheIntitule').value = '';
+                    document.getElementById('newTachePersonne').value = '';
+                    chargerTaches();
+                }
+            });
+        }
+
+        function cyclerStatut(id, statut) {
+            const idx = statutCycle.indexOf(statut);
+            const next = statutCycle[(idx + 1) % statutCycle.length];
+
+            fetch(`/admin/taches/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ statut: next }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) chargerTaches();
+            });
+        }
+
+        function supprimerTache(id) {
+            fetch(`/admin/taches/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) chargerTaches();
+            });
+        }
+
+        // Permettre l'ajout avec Entrée
+        document.getElementById('newTacheIntitule').addEventListener('keydown', e => {
+            if (e.key === 'Enter') ajouterTache();
+        });
+        document.getElementById('newTachePersonne').addEventListener('keydown', e => {
+            if (e.key === 'Enter') ajouterTache();
+        });
+
+        // Charger les tâches au chargement
+        chargerTaches();
+    </script>
+
     @include('admin._footer')
 </body>
 </html>
+
 

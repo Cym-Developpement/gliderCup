@@ -88,4 +88,7 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/paiement/test', [\App\Http\Controllers\PaiementController::class, 'test'])->name('paiement.test');
     Route::get('/paiement/verifier-tous', [\App\Http\Controllers\PaiementController::class, 'verifierTousLesPaiements'])->name('paiement.verifier-tous');
     Route::post('/contact/{id}/repondre', [AdminController::class, 'repondreMessageContact'])->name('contact.repondre');
+    Route::get('/taches', [AdminController::class, 'getTaches'])->name('taches.index');
+    Route::post('/taches/{id?}', [AdminController::class, 'saveTache'])->name('taches.save');
+    Route::delete('/taches/{id}', [AdminController::class, 'deleteTache'])->name('taches.delete');
 });

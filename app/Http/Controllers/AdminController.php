@@ -20,6 +20,7 @@ use App\Notifications\ReponseContact;
 use App\Models\Message;
 use App\Models\MessageGroupe;
 use App\Models\PointVirage;
+use App\Models\Tache;
 use App\Services\OpenAipService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -1087,6 +1088,71 @@ class AdminController extends Controller
         }
 
         $point->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Retourne les tâches de la compétition active en JSON
+     */
+    public function getTaches()
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json([]);
+        }
+
+        $taches = Tache::where('competition_id', $competition->id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return response()->json($taches);
+    }
+
+    /**
+     * Crée ou met à jour une tâche
+     */
+    public function saveTache(Request $request, $id = null)
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $rules = [
+            'personne' => 'nullable|string|max:255',
+            'statut' => 'nullable|string|in:A faire,En cours,Fait',
+        ];
+        $rules['intitule'] = $id ? 'nullable|string|max:255' : 'required|string|max:255';
+        $request->validate($rules);
+
+        if ($id) {
+            $tache = Tache::where('competition_id', $competition->id)->findOrFail($id);
+            $tache->update($request->only(array_filter(['intitule', 'personne', 'statut'], fn($f) => $request->has($f))));
+        } else {
+            $tache = Tache::create([
+                'competition_id' => $competition->id,
+                'intitule' => $request->intitule,
+                'personne' => $request->personne,
+                'statut' => $request->statut ?? 'A faire',
+            ]);
+        }
+
+        return response()->json(['success' => true, 'tache' => $tache]);
+    }
+
+    /**
+     * Supprime une tâche
+     */
+    public function deleteTache($id)
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $tache = Tache::where('competition_id', $competition->id)->findOrFail($id);
+        $tache->delete();
 
         return response()->json(['success' => true]);
     }
