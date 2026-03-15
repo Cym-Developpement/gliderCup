@@ -1711,6 +1711,9 @@
                     <button onclick="activerModeEdition()" id="btnAjouterPoint" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                         Ajouter un point de virage
                     </button>
+                    <a href="{{ route('export.gps', 'cup') }}" class="w-full px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition inline-block text-center">
+                        Télécharger .CUP
+                    </a>
                 </div>
                 <div id="listePointsVirage" class="space-y-2 text-sm"></div>
             </div>
