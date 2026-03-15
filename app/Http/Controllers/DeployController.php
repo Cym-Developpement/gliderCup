@@ -118,10 +118,16 @@ class DeployController extends Controller
             }
 
             if (file_exists($composerPhar)) {
-                // Supprimer le lock pour forcer une résolution complète
+                // Supprimer le lock et les paquets ycdev pour forcer une réinstallation complète
                 $lockFile = $basePath . '/composer.lock';
                 if (file_exists($lockFile)) {
                     @unlink($lockFile);
+                }
+                foreach (['paper-size', 'php-osm-static-aero'] as $pkg) {
+                    $pkgDir = $basePath . '/vendor/ycdev/' . $pkg;
+                    if (is_dir($pkgDir)) {
+                        (new Process(['rm', '-rf', $pkgDir]))->run();
+                    }
                 }
 
                 // Vider le cache composer pour forcer la résolution des nouvelles versions
@@ -135,6 +141,11 @@ class DeployController extends Controller
                 $composer->setTimeout(300);
                 $composer->run();
                 $composerOutput = 'STDOUT: ' . $composer->getOutput() . "\nSTDERR: " . $composer->getErrorOutput();
+
+                // Vider OPcache pour que PHP charge les nouveaux fichiers
+                if (function_exists('opcache_reset')) {
+                    opcache_reset();
+                }
             }
 
             // Vider le cache après composer update
