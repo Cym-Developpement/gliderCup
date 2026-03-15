@@ -39,6 +39,11 @@ class DeployController extends Controller
             }
         }
 
+        // Réinitialiser les modifications locales avant le pull
+        $reset = new Process(['git', 'checkout', '.'], $basePath);
+        $reset->setTimeout(30);
+        $reset->run();
+
         $process = new Process(['git', 'pull'], $basePath);
         $process->setTimeout(60);
         $process->run();
