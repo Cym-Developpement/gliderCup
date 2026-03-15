@@ -62,8 +62,13 @@ class DeployController extends Controller
             }
 
             // Lancer les migrations automatiquement après le pull
-            // PHP_BINARY donne le chemin absolu du binaire PHP en cours (compatible OVH mutualisé)
-            $phpBin = PHP_BINARY ?: 'php';
+            // Sur OVH mutualisé, PHP_BINARY pointe vers php-fpm (inutilisable en CLI).
+            // On dérive le binaire CLI depuis la version PHP courante.
+            $phpVersion = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+            $phpBin = "/usr/local/php{$phpVersion}/bin/php";
+            if (!file_exists($phpBin)) {
+                $phpBin = 'php';
+            }
             $migrate = new Process([$phpBin, 'artisan', 'migrate', '--force'], $basePath);
             $migrate->setTimeout(120);
             $migrate->run();
