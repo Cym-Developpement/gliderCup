@@ -22,11 +22,14 @@ use App\Models\MessageGroupe;
 use App\Models\PointVirage;
 use App\Models\Tache;
 use App\Services\OpenAipService;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -1155,5 +1158,64 @@ class AdminController extends Controller
         $tache->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Liste des administrateurs (JSON).
+     */
+    public function getAdmins()
+    {
+        $admins = User::where('role', 'admin')->select('id', 'name', 'email')->orderBy('name')->get();
+        return response()->json($admins);
+    }
+
+    /**
+     * Crée ou met à jour un administrateur.
+     */
+    public function saveAdmin(Request $request, $id = null)
+    {
+        $request->validate([
+            'name'  => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+        ]);
+
+        if ($id) {
+            $user = User::findOrFail($id);
+            if ($user->role !== 'admin') {
+                return response()->json(['error' => 'Cet utilisateur n\'est pas administrateur.'], 403);
+            }
+            $user->name  = $request->name;
+            $user->email = $request->email;
+            $user->save();
+            return response()->json(['success' => true, 'message' => 'Administrateur mis à jour.']);
+        }
+
+        $user = User::create([
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => Hash::make(Str::random(32)),
+            'role'     => 'admin',
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Administrateur créé. Il pourra se connecter via « Mot de passe oublié ».']);
+    }
+
+    /**
+     * Supprime un administrateur (interdit de se supprimer soi-même).
+     */
+    public function deleteAdmin($id)
+    {
+        if ((int) $id === (int) Auth::id()) {
+            return response()->json(['error' => 'Vous ne pouvez pas supprimer votre propre compte.'], 403);
+        }
+
+        $user = User::findOrFail($id);
+        if ($user->role !== 'admin') {
+            return response()->json(['error' => 'Cet utilisateur n\'est pas administrateur.'], 403);
+        }
+
+        $user->delete();
+
+        return response()->json(['success' => true, 'message' => 'Administrateur supprimé.']);
     }
 }

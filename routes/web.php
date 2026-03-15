@@ -91,4 +91,9 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/taches', [AdminController::class, 'getTaches'])->name('taches.index');
     Route::post('/taches/{id?}', [AdminController::class, 'saveTache'])->name('taches.save');
     Route::delete('/taches/{id}', [AdminController::class, 'deleteTache'])->name('taches.delete');
+
+    // Gestion des administrateurs
+    Route::get('/admins', [AdminController::class, 'getAdmins'])->name('admins.index');
+    Route::post('/admins/{id?}', [AdminController::class, 'saveAdmin'])->name('admins.save');
+    Route::delete('/admins/{id}', [AdminController::class, 'deleteAdmin'])->name('admins.delete');
 });

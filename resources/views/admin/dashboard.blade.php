@@ -129,6 +129,12 @@
                             <button onclick="ouvrirTableMessagesGroupes(); closeDropdownActions();" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
                                 Historique des messages
                             </button>
+
+                            <div class="border-t border-gray-200 my-1"></div>
+
+                            <button onclick="ouvrirModalAdmins(); closeDropdownActions();" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                Gérer les administrateurs
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2835,6 +2841,180 @@
 
         // Charger les tâches au chargement
         chargerTaches();
+    </script>
+
+    <!-- Modal Gestion des Administrateurs -->
+    <div id="modalAdmins" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-900">Gestion des administrateurs</h3>
+                <button onclick="fermerModalAdmins()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="adminsMessage" style="display:none;" class="mb-3 px-4 py-2 rounded text-sm"></div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white border border-gray-300">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 border-b text-left text-sm font-medium text-gray-700">Nom</th>
+                            <th class="px-4 py-2 border-b text-left text-sm font-medium text-gray-700">Email</th>
+                            <th class="px-4 py-2 border-b text-left text-sm font-medium text-gray-700" style="width:160px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminsTableBody">
+                        <tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">Chargement...</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-gray-50">
+                            <td class="px-4 py-2 border-t"><input type="text" id="newAdminName" placeholder="Nom" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+                            <td class="px-4 py-2 border-t"><input type="email" id="newAdminEmail" placeholder="Email" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+                            <td class="px-4 py-2 border-t"><button onclick="ajouterAdmin()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">Ajouter</button></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var currentUserId = {{ Auth::id() }};
+        var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        function showMsg(text, isError) {
+            var el = document.getElementById('adminsMessage');
+            el.className = 'mb-3 px-4 py-2 rounded text-sm ' + (isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800');
+            el.textContent = text;
+            el.style.display = 'block';
+            setTimeout(function() { el.style.display = 'none'; }, 4000);
+        }
+
+        function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        function escAttr(s) { return s.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        function chargerAdmins() {
+            var tbody = document.getElementById('adminsTableBody');
+            tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">Chargement...</td></tr>';
+            fetch('{{ route("admin.admins.index") }}', { headers: { 'Accept': 'application/json' } })
+                .then(function(r) { return r.json(); })
+                .then(function(admins) {
+                    tbody.innerHTML = '';
+                    if (admins.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">Aucun administrateur.</td></tr>';
+                        return;
+                    }
+                    admins.forEach(function(admin) {
+                        var isSelf = admin.id === currentUserId;
+                        var tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-50';
+                        tr.innerHTML =
+                            '<td class="px-4 py-2 border-b text-sm">' + escHtml(admin.name) + '</td>' +
+                            '<td class="px-4 py-2 border-b text-sm">' + escHtml(admin.email) + '</td>' +
+                            '<td class="px-4 py-2 border-b text-sm">' +
+                                '<button onclick="modifierAdminRow(' + admin.id + ', this)" class="text-blue-600 hover:text-blue-800 mr-2 text-sm" title="Modifier">Modifier</button>' +
+                                (isSelf ? '<span class="text-gray-400 text-xs">(vous)</span>' : '<button onclick="supprimerAdmin(' + admin.id + ')" class="text-red-600 hover:text-red-800 text-sm" title="Supprimer">Supprimer</button>') +
+                            '</td>';
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(function() { showMsg('Erreur lors du chargement.', true); });
+        }
+
+        window.ouvrirModalAdmins = function() {
+            document.getElementById('modalAdmins').classList.remove('hidden');
+            chargerAdmins();
+        };
+
+        window.fermerModalAdmins = function() {
+            document.getElementById('modalAdmins').classList.add('hidden');
+        };
+
+        // Fermeture clic extérieur
+        document.getElementById('modalAdmins').addEventListener('click', function(e) {
+            if (e.target === this) fermerModalAdmins();
+        });
+
+        // Fermeture Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !document.getElementById('modalAdmins').classList.contains('hidden')) {
+                fermerModalAdmins();
+            }
+        });
+
+        window.modifierAdminRow = function(id, btn) {
+            var tr = btn.closest('tr');
+            var cells = tr.querySelectorAll('td');
+            var name = cells[0].textContent.trim();
+            var email = cells[1].textContent.trim();
+            cells[0].innerHTML = '<input type="text" value="' + escAttr(name) + '" id="editName' + id + '" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">';
+            cells[1].innerHTML = '<input type="email" value="' + escAttr(email) + '" id="editEmail' + id + '" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">';
+            cells[2].innerHTML =
+                '<button onclick="enregistrerAdmin(' + id + ')" class="text-green-600 hover:text-green-800 mr-2 text-sm">Enregistrer</button>' +
+                '<button onclick="chargerAdminsPublic()" class="text-gray-500 hover:text-gray-700 text-sm">Annuler</button>';
+        };
+
+        window.chargerAdminsPublic = chargerAdmins;
+
+        window.enregistrerAdmin = function(id) {
+            var name = document.getElementById('editName' + id).value.trim();
+            var email = document.getElementById('editEmail' + id).value.trim();
+            if (!name || !email) { showMsg('Veuillez remplir tous les champs.', true); return; }
+            fetch('/admin/admins/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify({ name: name, email: email })
+            })
+            .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+            .then(function(res) {
+                if (res.ok) { showMsg(res.data.message, false); chargerAdmins(); }
+                else { showMsg(res.data.error || 'Erreur.', true); }
+            })
+            .catch(function() { showMsg('Erreur réseau.', true); });
+        };
+
+        window.ajouterAdmin = function() {
+            var name = document.getElementById('newAdminName').value.trim();
+            var email = document.getElementById('newAdminEmail').value.trim();
+            if (!name || !email) { showMsg('Veuillez remplir le nom et l\'email.', true); return; }
+            fetch('/admin/admins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify({ name: name, email: email })
+            })
+            .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+            .then(function(res) {
+                if (res.ok) {
+                    showMsg(res.data.message, false);
+                    document.getElementById('newAdminName').value = '';
+                    document.getElementById('newAdminEmail').value = '';
+                    chargerAdmins();
+                } else {
+                    var msg = res.data.error || (res.data.errors ? Object.values(res.data.errors).flat().join(' ') : 'Erreur.');
+                    showMsg(msg, true);
+                }
+            })
+            .catch(function() { showMsg('Erreur réseau.', true); });
+        };
+
+        window.supprimerAdmin = function(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cet administrateur ?')) return;
+            fetch('/admin/admins/' + id, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+            .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+            .then(function(res) {
+                if (res.ok) { showMsg(res.data.message, false); chargerAdmins(); }
+                else { showMsg(res.data.error || 'Erreur.', true); }
+            })
+            .catch(function() { showMsg('Erreur réseau.', true); });
+        };
+    })();
     </script>
 
     @include('admin._footer')
