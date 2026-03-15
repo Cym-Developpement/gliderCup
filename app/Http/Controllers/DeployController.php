@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\Process\Process;
 
 class DeployController extends Controller
@@ -61,23 +62,19 @@ class DeployController extends Controller
                 }
             }
 
-            // Lancer les migrations automatiquement après le pull
-            // Sur OVH mutualisé, PHP_BINARY pointe vers php-fpm (inutilisable en CLI).
-            // On dérive le binaire CLI depuis la version PHP courante.
-            $phpVersion = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
-            $phpBin = "/usr/local/php{$phpVersion}/bin/php";
-            if (!file_exists($phpBin)) {
-                $phpBin = 'php';
+            // Lancer les migrations directement dans le processus PHP courant
+            try {
+                Artisan::call('migrate', ['--force' => true]);
+                $migrateOutput = Artisan::output();
+            } catch (\Exception $e) {
+                $migrateOutput = 'Erreur migration : ' . $e->getMessage();
             }
-            $migrate = new Process([$phpBin, 'artisan', 'migrate', '--force'], $basePath);
-            $migrate->setTimeout(120);
-            $migrate->run();
 
             return response()->json([
                 'status' => 'success',
                 'output' => $pullOutput,
                 'backup' => $backupMessage,
-                'migrate' => $migrate->isSuccessful() ? $migrate->getOutput() : $migrate->getErrorOutput(),
+                'migrate' => $migrateOutput,
             ]);
         }
 
