@@ -88,7 +88,7 @@
                         </svg>
                     </button>
                     
-                    <div id="dropdownActions" class="hidden fixed w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5" style="z-index: 9999;">
+                    <div id="dropdownActions" class="hidden fixed w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 overflow-y-auto" style="z-index: 9999; max-height: 80vh;">
                         <div class="py-1" role="menu">
                             <a href="{{ route('admin.paiement.test') }}" target="_blank" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
                                 Voir la page de paiement
@@ -1115,8 +1115,23 @@
                 const button = event.target.closest('button');
                 if (button) {
                     const rect = button.getBoundingClientRect();
-                    dropdown.style.top = (rect.bottom + 4) + 'px';
+                    // Afficher d'abord pour mesurer la hauteur réelle
+                    dropdown.style.visibility = 'hidden';
+                    dropdown.classList.remove('hidden');
+                    const dropdownHeight = dropdown.offsetHeight;
+                    dropdown.classList.add('hidden');
+                    dropdown.style.visibility = '';
+
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+                        dropdown.style.top = '';
+                        dropdown.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+                    } else {
+                        dropdown.style.bottom = '';
+                        dropdown.style.top = (rect.bottom + 4) + 'px';
+                    }
                     dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+                    dropdown.style.left = '';
                 }
                 dropdown.classList.remove('hidden');
             } else {
