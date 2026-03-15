@@ -118,36 +118,11 @@ class DeployController extends Controller
             }
 
             if (file_exists($composerPhar)) {
-                // Supprimer le lock et les paquets ycdev pour forcer une réinstallation complète
-                $lockFile = $basePath . '/composer.lock';
-                if (file_exists($lockFile)) {
-                    @unlink($lockFile);
-                }
-                foreach (['paper-size', 'php-osm-static-aero'] as $pkg) {
-                    $pkgDir = $basePath . '/vendor/ycdev/' . $pkg;
-                    if (is_dir($pkgDir)) {
-                        (new Process(['rm', '-rf', $pkgDir]))->run();
-                    }
-                }
-
-                // Vider le cache composer pour forcer la résolution des nouvelles versions
-                $clearCache = new Process([$this->getPhpBinary(), 'composer.phar', 'clear-cache', '--no-interaction'], $basePath);
-                $clearCache->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
-                $clearCache->setTimeout(30);
-                $clearCache->run();
-
                 $composer = new Process([$this->getPhpBinary(), 'composer.phar', 'update', '--no-dev', '--no-interaction', '--optimize-autoloader', '--ignore-platform-reqs'], $basePath);
                 $composer->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
                 $composer->setTimeout(300);
                 $composer->run();
-                $composerOutput = 'STDOUT: ' . $composer->getOutput() . "\nSTDERR: " . $composer->getErrorOutput();
-
-                // Vider les caches Laravel
-                try {
-                    Artisan::call('optimize:clear');
-                } catch (\Exception $e) {
-                    // ignore
-                }
+                $composerOutput = $composer->isSuccessful() ? $composer->getOutput() : 'Erreur composer : ' . $composer->getErrorOutput();
             }
 
             // Vider le cache après composer update
