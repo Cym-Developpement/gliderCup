@@ -12,6 +12,22 @@ class DeployController extends Controller
 
     public function update(Request $request): JsonResponse
     {
+        // Vérifier la signature GitHub sur les requêtes POST
+        if ($request->isMethod('post')) {
+            $secret = config('app.deploy_webhook_secret');
+            $signature = $request->header('X-Hub-Signature-256');
+
+            if (!$secret || !$signature) {
+                return response()->json(['status' => 'error', 'output' => 'Signature manquante'], 403);
+            }
+
+            $expected = 'sha256=' . hash_hmac('sha256', $request->getContent(), $secret);
+
+            if (!hash_equals($expected, $signature)) {
+                return response()->json(['status' => 'error', 'output' => 'Signature invalide'], 403);
+            }
+        }
+
         $basePath = base_path();
 
         // Si pas de dépôt git, initialiser et rattacher au remote

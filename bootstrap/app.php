@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         ]);
+        $middleware->validateCsrfTokens(except: [
+            '/update',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

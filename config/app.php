@@ -118,6 +118,8 @@ return [
     |
     */
 
+    'deploy_webhook_secret' => env('DEPLOY_WEBHOOK_SECRET'),
+
     'maintenance' => [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
