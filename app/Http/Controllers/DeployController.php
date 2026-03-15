@@ -11,6 +11,37 @@ class DeployController extends Controller
 {
     private const REPO_URL = 'https://github.com/Cym-Developpement/gliderCup.git';
 
+    /**
+     * Détermine le chemin du binaire PHP CLI.
+     */
+    private function getPhpBinary(): string
+    {
+        // Si PHP_BINARY n'est pas fpm/cgi, on l'utilise directement
+        if (!preg_match('/(fpm|cgi)/', PHP_BINARY) && is_executable(PHP_BINARY)) {
+            return PHP_BINARY;
+        }
+
+        // Chercher le CLI dans le même répertoire que le binaire actuel
+        // ex: /usr/bin/php-fpm8.2 → /usr/bin/php8.2, /usr/bin/php
+        $dir = PHP_BINDIR;
+        $version = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+
+        $candidates = [
+            $dir . '/php' . $version,
+            $dir . '/php' . PHP_MAJOR_VERSION,
+            $dir . '/php',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_executable($candidate)) {
+                return $candidate;
+            }
+        }
+
+        // Dernier recours
+        return 'php';
+    }
+
     public function update(Request $request): JsonResponse
     {
         // Vérifier la signature GitHub sur les requêtes POST
@@ -72,6 +103,29 @@ class DeployController extends Controller
                 Artisan::call('storage:link');
             }
 
+            // Installer composer.phar si absent et lancer composer update
+            $composerOutput = null;
+            $composerPhar = $basePath . '/composer.phar';
+            if (!file_exists($composerPhar)) {
+                $install = new Process([$this->getPhpBinary(), '-r', "copy('https://getcomposer.org/installer', 'composer-setup.php');"], $basePath);
+                $install->setTimeout(60);
+                $install->run();
+
+                $setup = new Process([$this->getPhpBinary(), 'composer-setup.php'], $basePath);
+                $setup->setTimeout(60);
+                $setup->run();
+
+                $cleanup = new Process([$this->getPhpBinary(), '-r', "unlink('composer-setup.php');"], $basePath);
+                $cleanup->run();
+            }
+
+            if (file_exists($composerPhar)) {
+                $composer = new Process([$this->getPhpBinary(), 'composer.phar', 'update', '--no-dev', '--no-interaction', '--optimize-autoloader'], $basePath);
+                $composer->setTimeout(300);
+                $composer->run();
+                $composerOutput = $composer->isSuccessful() ? $composer->getOutput() : 'Erreur composer : ' . $composer->getErrorOutput();
+            }
+
             // Lancer les migrations directement dans le processus PHP courant
             try {
                 Artisan::call('migrate', ['--force' => true]);
@@ -84,6 +138,7 @@ class DeployController extends Controller
                 'status' => 'success',
                 'output' => $pullOutput,
                 'backup' => $backupMessage,
+                'composer' => $composerOutput,
                 'migrate' => $migrateOutput,
             ]);
         }
