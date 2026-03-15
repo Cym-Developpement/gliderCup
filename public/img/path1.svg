@@ -78,14 +78,10 @@
     <text
        xml:space="preserve"
        id="text15"
-       style="font-weight:bold;font-size:42.6667px;font-family:Sans;-inkscape-font-specification:'Sans Bold';text-align:start;letter-spacing:3px;writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect15);fill:#000000;fill-opacity:1;stroke:#6d0006;stroke-width:0"
-       x="2.1759884"
-       y="0"
-       transform="translate(312.62348,-251.16732)"><tspan
-         x="-76.504913"
-         y="-252.07902"
-         id="tspan2"><tspan
-           style="text-align:center;text-anchor:middle"
-           id="tspan1">#PP</tspan></tspan></text>
+       style="font-weight:bold;font-size:50px;font-family:Sans;fill:#000000;fill-opacity:1"
+       x="275.22614"
+       y="-503"
+       text-anchor="middle"
+       dominant-baseline="central">#PP</text>
   </g>
 </svg>
