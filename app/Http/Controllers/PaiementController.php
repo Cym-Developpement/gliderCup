@@ -86,7 +86,13 @@ class PaiementController extends Controller
         // Calculer le montant total
         $montantPlaneur = 50; // 50€ par planeur
         $montantAdhesion = 50; // 50€ d'adhésion par pilote
-        $montantTotal = $isTestMode ? 1.00 : (($nombrePlaneurs * $montantPlaneur) + $montantAdhesion); // 1€ pour les tests
+        if ($isTestMode) {
+            $montantTotal = 1.00;
+        } elseif ($pilote instanceof Pilote && $pilote->montant_custom !== null) {
+            $montantTotal = (float) $pilote->montant_custom;
+        } else {
+            $montantTotal = ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
+        }
 
         // Informations de paiement depuis la base de données (ou .env en fallback)
         $config = PaiementConfiguration::getConfiguration();

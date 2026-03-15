@@ -354,6 +354,53 @@ class AdminController extends Controller
     }
 
     /**
+     * Met à jour les informations personnelles d'un pilote
+     */
+    public function updatePilote(Request $request, $id)
+    {
+        $pilote = Pilote::findOrFail($id);
+
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255',
+            'prenom' => 'required|string|max:255',
+            'qualite' => 'required|string|max:255',
+            'date_naissance' => 'required|date_format:Y-m-d',
+            'email' => 'required|email|max:255',
+            'telephone' => 'nullable|string|max:255',
+            'club' => 'nullable|string|max:255',
+            'numero_ffvp' => 'nullable|string|max:255',
+            'adresse' => 'nullable|string|max:255',
+            'code_postal' => 'nullable|string|max:10',
+            'ville' => 'nullable|string|max:255',
+        ]);
+
+        $pilote->update($validated);
+
+        return response()->json(['success' => true, 'message' => 'Informations du pilote mises à jour.']);
+    }
+
+    /**
+     * Met à jour le montant personnalisé d'un pilote (uniquement si non payé)
+     */
+    public function updateMontantPilote(Request $request, $id)
+    {
+        $pilote = Pilote::findOrFail($id);
+
+        if ($pilote->paiement_valide) {
+            return response()->json(['success' => false, 'message' => 'Impossible de modifier le montant d\'un pilote ayant déjà payé.'], 422);
+        }
+
+        $validated = $request->validate([
+            'montant_custom' => 'nullable|numeric|min:0',
+        ]);
+
+        $pilote->montant_custom = $validated['montant_custom'];
+        $pilote->save();
+
+        return response()->json(['success' => true, 'message' => 'Montant personnalisé mis à jour.']);
+    }
+
+    /**
      * Récupère les détails complets d'un pilote
      */
     public function getPiloteDetails($id)
@@ -384,6 +431,7 @@ class AdminController extends Controller
                 'paiement_valide' => $pilote->paiement_valide,
                 'identifiant_virement' => $pilote->identifiant_virement,
                 'helloasso_checkout_intent_id' => $pilote->helloasso_checkout_intent_id,
+                'montant_custom' => $pilote->montant_custom,
                 'created_at' => $pilote->created_at->format('d/m/Y H:i'),
                 'documents' => [
                     'autorisation_parentale' => $pilote->autorisation_parentale,

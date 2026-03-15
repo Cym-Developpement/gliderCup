@@ -186,9 +186,12 @@
                                         $montantPlaneur = 100;
                                         $montantAdhesion = 50;
                                         $nombrePlaneurs = $inscription->planeurs->count();
-                                        $prixTotal = ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
+                                        $prixTotal = $inscription->montant_custom !== null ? $inscription->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
                                     @endphp
                                     {{ number_format($prixTotal, 2, ',', ' ') }} €
+                                    @if($inscription->montant_custom !== null)
+                                        <span class="text-xs text-blue-600" title="Montant personnalisé">*</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-2 border-b relative" style="overflow: visible;">
                                     <div class="relative inline-block text-left">
@@ -290,7 +293,7 @@
                                         $totalGeneral = 0;
                                         foreach($inscriptions as $inscription) {
                                             $nombrePlaneurs = $inscription->planeurs->count();
-                                            $prixTotal = ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
+                                            $prixTotal = $inscription->montant_custom !== null ? $inscription->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
                                             $totalGeneral += $prixTotal;
                                         }
                                     @endphp
@@ -348,9 +351,12 @@
                                             $montantPlaneur = 100;
                                             $montantAdhesion = 50;
                                             $nombrePlaneurs = $paiement->planeurs->count();
-                                            $prixTotal = ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
+                                            $prixTotal = $paiement->montant_custom !== null ? $paiement->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
                                         @endphp
                                         {{ number_format($prixTotal, 2, ',', ' ') }} €
+                                        @if($paiement->montant_custom !== null)
+                                            <span class="text-xs text-blue-600" title="Montant personnalisé">*</span>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-2 border-b">
                                         @if($paiement->paiement_valide)
@@ -527,74 +533,87 @@
                     const pilote = data.pilote;
                     const planeurs = data.planeurs;
 
+                    // Convertir date_naissance dd/mm/yyyy en yyyy-mm-dd pour l'input date
+                    const dateNaissanceParts = pilote.date_naissance ? pilote.date_naissance.split('/') : [];
+                    const dateNaissanceISO = dateNaissanceParts.length === 3 ? `${dateNaissanceParts[2]}-${dateNaissanceParts[1]}-${dateNaissanceParts[0]}` : '';
+
                     let html = `
                         <div class="space-y-6">
-                            <!-- Informations personnelles -->
+                            <!-- Informations personnelles (éditables) -->
                             <div class="bg-gray-50 p-4 rounded-lg">
                                 <h4 class="text-lg font-semibold text-gray-800 mb-3">Informations personnelles</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <p class="text-sm text-gray-600">Nom</p>
-                                        <p class="font-semibold">${pilote.nom}</p>
+                                <div id="piloteInfoFeedback" class="hidden mb-3 px-4 py-2 rounded text-sm"></div>
+                                <form id="formPiloteInfo" data-pilote-id="${pilote.id}">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-sm text-gray-600">Nom</label>
+                                            <input type="text" name="nom" value="${pilote.nom}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Prénom</label>
+                                            <input type="text" name="prenom" value="${pilote.prenom}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Qualité</label>
+                                            <input type="text" name="qualite" value="${pilote.qualite}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Date de naissance</label>
+                                            <input type="date" name="date_naissance" value="${dateNaissanceISO}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Email</label>
+                                            <input type="email" name="email" value="${pilote.email}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Téléphone</label>
+                                            <input type="text" name="telephone" value="${pilote.telephone || ''}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Club</label>
+                                            <input type="text" name="club" value="${pilote.club || ''}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">N° FFVP</label>
+                                            <input type="text" name="numero_ffvp" value="${pilote.numero_ffvp || ''}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Adresse</label>
+                                            <input type="text" name="adresse" value="${pilote.adresse || ''}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Code postal</label>
+                                            <input type="text" name="code_postal" value="${pilote.code_postal || ''}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Ville</label>
+                                            <input type="text" name="ville" value="${pilote.ville || ''}" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Statut</label>
+                                            <p class="font-semibold mt-1">
+                                                ${pilote.statut === 'en_attente' ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">En attente</span>' : ''}
+                                                ${pilote.statut === 'validee' ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Validée</span>' : ''}
+                                                ${pilote.statut === 'refusee' ? '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm">Refusée</span>' : ''}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="text-sm text-gray-600">Date d'inscription</label>
+                                            <p class="font-semibold mt-1">${pilote.created_at}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="text-sm text-gray-600">Prénom</p>
-                                        <p class="font-semibold">${pilote.prenom}</p>
+                                    <div class="mt-4 flex justify-end">
+                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium transition duration-200">
+                                            Enregistrer les informations
+                                        </button>
                                     </div>
-                                    <div>
-                                        <p class="text-sm text-gray-600">Qualité</p>
-                                        <p class="font-semibold">${pilote.qualite}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-sm text-gray-600">Date de naissance</p>
-                                        <p class="font-semibold">${pilote.date_naissance}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-sm text-gray-600">Email</p>
-                                        <p class="font-semibold">${pilote.email}</p>
-                                    </div>
-                                    ${pilote.telephone ? `
-                                    <div>
-                                        <p class="text-sm text-gray-600">Téléphone</p>
-                                        <p class="font-semibold">${pilote.telephone}</p>
-                                    </div>
-                                    ` : ''}
-                                    ${pilote.club ? `
-                                    <div>
-                                        <p class="text-sm text-gray-600">Club</p>
-                                        <p class="font-semibold">${pilote.club}</p>
-                                    </div>
-                                    ` : ''}
-                                    ${pilote.numero_ffvp ? `
-                                    <div>
-                                        <p class="text-sm text-gray-600">N° FFVP</p>
-                                        <p class="font-semibold">${pilote.numero_ffvp}</p>
-                                    </div>
-                                    ` : ''}
-                                    <div>
-                                        <p class="text-sm text-gray-600">Statut</p>
-                                        <p class="font-semibold">
-                                            ${pilote.statut === 'en_attente' ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">En attente</span>' : ''}
-                                            ${pilote.statut === 'validee' ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Validée</span>' : ''}
-                                            ${pilote.statut === 'refusee' ? '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm">Refusée</span>' : ''}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p class="text-sm text-gray-600">Date d'inscription</p>
-                                        <p class="font-semibold">${pilote.created_at}</p>
-                                    </div>
-                                </div>
-                                ${pilote.adresse || pilote.code_postal || pilote.ville ? `
-                                <div class="mt-4">
-                                    <p class="text-sm text-gray-600">Adresse</p>
-                                    <p class="font-semibold">${pilote.adresse || ''} ${pilote.code_postal || ''} ${pilote.ville || ''}</p>
-                                </div>
-                                ` : ''}
+                                </form>
                             </div>
 
                             <!-- Informations de paiement -->
                             <div class="bg-gray-50 p-4 rounded-lg">
                                 <h4 class="text-lg font-semibold text-gray-800 mb-3">Informations de paiement</h4>
+                                <div id="montantFeedback" class="hidden mb-3 px-4 py-2 rounded text-sm"></div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p class="text-sm text-gray-600">Statut du paiement</p>
@@ -614,6 +633,25 @@
                                         <p class="font-semibold font-mono text-sm break-all">${pilote.helloasso_checkout_intent_id}</p>
                                     </div>
                                     ` : ''}
+                                    ${!pilote.paiement_valide ? `
+                                    <div class="md:col-span-2">
+                                        <form id="formMontantCustom" data-pilote-id="${pilote.id}" class="flex items-end gap-3">
+                                            <div class="flex-1">
+                                                <label class="text-sm text-gray-600">Montant facturé personnalisé (€)</label>
+                                                <input type="number" name="montant_custom" step="0.01" min="0" value="${pilote.montant_custom !== null ? pilote.montant_custom : ''}" placeholder="Laisser vide = calcul auto" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            </div>
+                                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200">
+                                                Enregistrer
+                                            </button>
+                                        </form>
+                                        <p class="text-xs text-gray-500 mt-1">Si vide, le calcul standard s'applique (nb planeurs × 100 € + 50 € adhésion).</p>
+                                    </div>
+                                    ` : (pilote.montant_custom !== null ? `
+                                    <div>
+                                        <p class="text-sm text-gray-600">Montant personnalisé</p>
+                                        <p class="font-semibold">${parseFloat(pilote.montant_custom).toFixed(2).replace('.', ',')} €</p>
+                                    </div>
+                                    ` : '')}
                                 </div>
                             </div>
 
@@ -774,6 +812,86 @@
                     `;
 
                     content.innerHTML = html;
+
+                    // Bind form submit: informations personnelles
+                    const formInfo = document.getElementById('formPiloteInfo');
+                    if (formInfo) {
+                        formInfo.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            const id = this.dataset.piloteId;
+                            const formData = new FormData(this);
+                            const data = Object.fromEntries(formData.entries());
+                            const feedback = document.getElementById('piloteInfoFeedback');
+
+                            fetch(`/admin/pilotes/${id}/update`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'Accept': 'application/json',
+                                },
+                                body: JSON.stringify(data),
+                            })
+                            .then(r => r.json())
+                            .then(result => {
+                                feedback.classList.remove('hidden', 'bg-red-100', 'text-red-800');
+                                if (result.success) {
+                                    feedback.classList.add('bg-green-100', 'text-green-800');
+                                    feedback.textContent = result.message;
+                                } else {
+                                    feedback.classList.add('bg-red-100', 'text-red-800');
+                                    feedback.textContent = result.message || 'Erreur lors de la mise à jour.';
+                                }
+                                setTimeout(() => feedback.classList.add('hidden'), 3000);
+                            })
+                            .catch(() => {
+                                feedback.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                                feedback.classList.add('bg-red-100', 'text-red-800');
+                                feedback.textContent = 'Erreur réseau lors de la mise à jour.';
+                                setTimeout(() => feedback.classList.add('hidden'), 3000);
+                            });
+                        });
+                    }
+
+                    // Bind form submit: montant personnalisé
+                    const formMontant = document.getElementById('formMontantCustom');
+                    if (formMontant) {
+                        formMontant.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            const id = this.dataset.piloteId;
+                            const montantInput = this.querySelector('input[name="montant_custom"]');
+                            const montantValue = montantInput.value === '' ? null : parseFloat(montantInput.value);
+                            const feedback = document.getElementById('montantFeedback');
+
+                            fetch(`/admin/pilotes/${id}/update-montant`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'Accept': 'application/json',
+                                },
+                                body: JSON.stringify({ montant_custom: montantValue }),
+                            })
+                            .then(r => r.json())
+                            .then(result => {
+                                feedback.classList.remove('hidden', 'bg-red-100', 'text-red-800');
+                                if (result.success) {
+                                    feedback.classList.add('bg-green-100', 'text-green-800');
+                                    feedback.textContent = result.message;
+                                } else {
+                                    feedback.classList.add('bg-red-100', 'text-red-800');
+                                    feedback.textContent = result.message || 'Erreur lors de la mise à jour.';
+                                }
+                                setTimeout(() => feedback.classList.add('hidden'), 3000);
+                            })
+                            .catch(() => {
+                                feedback.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                                feedback.classList.add('bg-red-100', 'text-red-800');
+                                feedback.textContent = 'Erreur réseau lors de la mise à jour.';
+                                setTimeout(() => feedback.classList.add('hidden'), 3000);
+                            });
+                        });
+                    }
                 })
                 .catch(error => {
                     console.error('Erreur:', error);

@@ -55,6 +55,8 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/planeurs', [AdminController::class, 'listePlaneurs'])->name('planeurs');
     Route::get('/pilotes/{id}/details', [AdminController::class, 'getPiloteDetails'])->name('pilotes.details');
+    Route::post('/pilotes/{id}/update', [AdminController::class, 'updatePilote'])->name('pilotes.update');
+    Route::post('/pilotes/{id}/update-montant', [AdminController::class, 'updateMontantPilote'])->name('pilotes.update-montant');
     Route::post('/pilotes/{id}/envoyer-message-compte-cree', [AdminController::class, 'envoyerMessageCompteCree'])->name('pilotes.envoyer-message-compte-cree');
     Route::post('/pilotes/{id}/remplacer-document', [AdminController::class, 'remplacerDocument'])->name('pilotes.remplacer-document');
     Route::post('/inscriptions/{id}/valider', [AdminController::class, 'validerInscription'])->name('inscriptions.valider');

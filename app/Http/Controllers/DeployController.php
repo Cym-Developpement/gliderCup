@@ -43,9 +43,34 @@ class DeployController extends Controller
         $process->run();
 
         if ($process->isSuccessful()) {
+            $pullOutput = $process->getOutput();
+
+            // Sauvegarder la base de données avant la migration
+            $backupMessage = null;
+            $dbPath = database_path('database.sqlite');
+            if (file_exists($dbPath)) {
+                $backupDir = storage_path('backup');
+                if (!is_dir($backupDir)) {
+                    mkdir($backupDir, 0755, true);
+                }
+                $backupFile = $backupDir . '/database_' . date('Y-m-d_H-i-s') . '.sqlite';
+                if (copy($dbPath, $backupFile)) {
+                    $backupMessage = 'Backup créé : ' . basename($backupFile);
+                } else {
+                    $backupMessage = 'Erreur lors de la création du backup';
+                }
+            }
+
+            // Lancer les migrations automatiquement après le pull
+            $migrate = new Process(['php', 'artisan', 'migrate', '--force'], $basePath);
+            $migrate->setTimeout(120);
+            $migrate->run();
+
             return response()->json([
                 'status' => 'success',
-                'output' => $process->getOutput(),
+                'output' => $pullOutput,
+                'backup' => $backupMessage,
+                'migrate' => $migrate->isSuccessful() ? $migrate->getOutput() : $migrate->getErrorOutput(),
             ]);
         }
 

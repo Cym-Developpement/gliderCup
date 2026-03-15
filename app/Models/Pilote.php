@@ -37,6 +37,7 @@ class Pilote extends Authenticatable
         'spl_valide',
         'statut',
         'paiement_valide',
+        'montant_custom',
     ];
 
     protected $hidden = [
