@@ -134,7 +134,7 @@ class DeployController extends Controller
                 $composer->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
                 $composer->setTimeout(300);
                 $composer->run();
-                $composerOutput = $composer->isSuccessful() ? $composer->getOutput() : 'Erreur composer : ' . $composer->getErrorOutput();
+                $composerOutput = 'STDOUT: ' . $composer->getOutput() . "\nSTDERR: " . $composer->getErrorOutput();
             }
 
             // Vider le cache après composer update
