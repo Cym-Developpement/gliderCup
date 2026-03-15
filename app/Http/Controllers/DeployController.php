@@ -62,6 +62,11 @@ class DeployController extends Controller
                 }
             }
 
+            // Créer le lien symbolique storage si nécessaire
+            if (!file_exists(public_path('storage'))) {
+                Artisan::call('storage:link');
+            }
+
             // Lancer les migrations directement dans le processus PHP courant
             try {
                 Artisan::call('migrate', ['--force' => true]);

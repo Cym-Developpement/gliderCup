@@ -1663,9 +1663,6 @@
                     <button onclick="activerModeEdition()" id="btnAjouterPoint" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                         Ajouter un point de virage
                     </button>
-                    <button onclick="sauvegarderPointsVirage()" class="w-full px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
-                        Sauvegarder
-                    </button>
                     <button onclick="fermerModalCartePointsVirage()" class="w-full px-3 py-2 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
                         Fermer
                     </button>
@@ -1961,12 +1958,6 @@
                 console.error('Erreur chargement points:', err);
             }
             return [];
-        }
-
-        // Le bouton Sauvegarder n'est plus nécessaire (sauvegarde individuelle),
-        // on le garde pour feedback
-        async function sauvegarderPointsVirage() {
-            alert('Les points sont sauvegardés automatiquement à chaque ajout ou modification.');
         }
 
         function chargerLeaflet() {
