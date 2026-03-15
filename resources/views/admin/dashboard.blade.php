@@ -1059,21 +1059,32 @@
             const dropdown = document.getElementById('dropdown-' + id);
             const button = event.target.closest('button');
             const isHidden = dropdown.classList.contains('hidden');
-            
+
             // Fermer tous les autres dropdowns
             document.querySelectorAll('[id^="dropdown-"]').forEach(function(d) {
                 if (d.id !== 'dropdown-' + id) {
                     d.classList.add('hidden');
                 }
             });
-            
+
             if (isHidden && button) {
-                // Calculer la position du dropdown en position fixed
+                // Position fixed = coordonnées viewport (sans scrollY)
                 const rect = button.getBoundingClientRect();
-                dropdown.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+                const dropdownHeight = dropdown.scrollHeight || 300;
+                const spaceBelow = window.innerHeight - rect.bottom;
+
+                // Ouvrir vers le haut si pas assez de place en bas
+                if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+                    dropdown.style.top = '';
+                    dropdown.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+                } else {
+                    dropdown.style.bottom = '';
+                    dropdown.style.top = (rect.bottom + 4) + 'px';
+                }
                 dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+                dropdown.style.left = '';
             }
-            
+
             // Toggle le dropdown actuel
             if (isHidden) {
                 dropdown.classList.remove('hidden');
@@ -1092,19 +1103,19 @@
         function toggleDropdownActions() {
             const dropdown = document.getElementById('dropdownActions');
             const isHidden = dropdown.classList.contains('hidden');
-            
+
             // Fermer tous les autres dropdowns
             document.querySelectorAll('[id^="dropdown-"]').forEach(function(d) {
                 if (d.id !== 'dropdownActions') {
                     d.classList.add('hidden');
                 }
             });
-            
+
             if (isHidden) {
                 const button = event.target.closest('button');
                 if (button) {
                     const rect = button.getBoundingClientRect();
-                    dropdown.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+                    dropdown.style.top = (rect.bottom + 4) + 'px';
                     dropdown.style.right = (window.innerWidth - rect.right) + 'px';
                 }
                 dropdown.classList.remove('hidden');
