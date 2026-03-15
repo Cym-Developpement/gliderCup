@@ -1652,16 +1652,17 @@
             <!-- Carte (70% de la largeur) à gauche -->
             <div class="h-full relative">
                 <div id="carte-points-virage" class="w-full h-full" style="min-height: 100vh;"></div>
-                <!-- Bouton fermer en haut à droite de la carte -->
-                <button onclick="fermerModalCartePointsVirage()" class="absolute top-4 right-4 z-[1000] bg-white hover:bg-gray-100 text-gray-800 rounded-full p-2 shadow-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
             </div>
             <!-- Colonne de boutons (30% de la largeur) à droite -->
             <div class="h-full bg-white border-l border-gray-300 overflow-y-auto p-4">
-                <h3 class="text-lg font-bold text-gray-900 mb-4">Points de virage</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">Points de virage</h3>
+                    <button onclick="fermerModalCartePointsVirage()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
                 <div class="space-y-2">
                     <!-- Les boutons seront ajoutés ici -->
                     <button onclick="activerModeEdition()" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
