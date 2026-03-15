@@ -9,16 +9,16 @@
     <style>
         /* Style pour le mode édition de la carte */
         .leaflet-edit-mode {
-            cursor: copy !important;
+            cursor: crosshair !important;
         }
         .leaflet-edit-mode .leaflet-container {
-            cursor: copy !important;
+            cursor: crosshair !important;
         }
         .leaflet-edit-mode .leaflet-interactive {
-            cursor: copy !important;
+            cursor: crosshair !important;
         }
         .leaflet-edit-mode .leaflet-pane {
-            cursor: copy !important;
+            cursor: crosshair !important;
         }
     </style>
 </head>
@@ -1882,14 +1882,19 @@
             }
 
             modeEdition = true;
-            
-            // Utiliser getContainer() de Leaflet pour ajouter une classe CSS (méthode recommandée)
+
+            // Désactiver le déplacement et le zoom de la carte
+            cartePointsVirage.dragging.disable();
+            cartePointsVirage.scrollWheelZoom.disable();
+            cartePointsVirage.doubleClickZoom.disable();
+            cartePointsVirage.touchZoom.disable();
+            cartePointsVirage.boxZoom.disable();
+
+            // Appliquer le curseur crosshair via la classe CSS
             const container = cartePointsVirage.getContainer();
             if (container) {
                 container.classList.add('leaflet-edit-mode');
             }
-            
-            // Ajouter aussi la classe sur l'élément parent pour être sûr
             const carteElement = document.getElementById('carte-points-virage');
             if (carteElement) {
                 carteElement.classList.add('leaflet-edit-mode');
@@ -1901,7 +1906,7 @@
                 const lng = e.latlng.lng;
                 console.log('Coordonnées GPS cliquées:', { latitude: lat, longitude: lng });
             };
-            
+
             cartePointsVirage.on('click', clickHandler);
 
             // Ajouter un listener sur le document pour détecter les clics hors de la carte
@@ -1910,16 +1915,21 @@
 
         function desactiverModeEdition() {
             modeEdition = false;
-            
-            // Retirer la classe CSS du conteneur Leaflet
+
             if (cartePointsVirage) {
+                // Réactiver le déplacement et le zoom
+                cartePointsVirage.dragging.enable();
+                cartePointsVirage.scrollWheelZoom.enable();
+                cartePointsVirage.doubleClickZoom.enable();
+                cartePointsVirage.touchZoom.enable();
+                cartePointsVirage.boxZoom.enable();
+
                 const container = cartePointsVirage.getContainer();
                 if (container) {
                     container.classList.remove('leaflet-edit-mode');
                 }
             }
-            
-            // Retirer aussi la classe de l'élément parent
+
             const carteElement = document.getElementById('carte-points-virage');
             if (carteElement) {
                 carteElement.classList.remove('leaflet-edit-mode');
