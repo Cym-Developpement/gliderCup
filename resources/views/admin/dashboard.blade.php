@@ -2048,18 +2048,21 @@
         async function regenererCarte() {
             const modal = document.getElementById('modalGenerationCarte');
             const statusText = document.getElementById('generation-carte-status');
+            const subtitle = document.getElementById('generation-carte-subtitle');
             const spinner = document.getElementById('generation-carte-spinner');
             const iconSuccess = document.getElementById('generation-carte-success');
             const iconError = document.getElementById('generation-carte-error');
-            const closeBtn = document.getElementById('generation-carte-close');
+            const downloadLink = document.getElementById('generation-carte-download');
 
             // Afficher la modal en mode loading
             modal.classList.remove('hidden');
-            statusText.textContent = 'Génération de la carte en cours...';
+            statusText.textContent = 'Génération en cours...';
+            subtitle.textContent = 'Cette opération peut prendre quelques minutes.';
+            subtitle.classList.remove('hidden');
             spinner.classList.remove('hidden');
             iconSuccess.classList.add('hidden');
             iconError.classList.add('hidden');
-            closeBtn.classList.add('hidden');
+            downloadLink.classList.add('hidden');
 
             try {
                 const response = await fetch('{{ route("admin.carte.regenerer") }}', {
@@ -2074,16 +2077,19 @@
                 if (data.success) {
                     iconSuccess.classList.remove('hidden');
                     statusText.textContent = 'Carte générée avec succès !';
+                    subtitle.classList.add('hidden');
+                    downloadLink.classList.remove('hidden');
                 } else {
                     iconError.classList.remove('hidden');
                     statusText.textContent = 'Erreur : ' + (data.message || 'Erreur inconnue');
+                    subtitle.classList.add('hidden');
                 }
             } catch (e) {
                 spinner.classList.add('hidden');
                 iconError.classList.remove('hidden');
                 statusText.textContent = 'Erreur lors de la génération de la carte.';
+                subtitle.classList.add('hidden');
             }
-            closeBtn.classList.remove('hidden');
         }
 
         async function ouvrirModalCartePointsVirage() {
@@ -3076,28 +3082,47 @@
 
     <!-- Modal génération carte -->
     <div id="modalGenerationCarte" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-1/3 mx-auto p-8 w-96 shadow-lg rounded-md bg-white text-center">
-            <div id="generation-carte-spinner" class="mx-auto mb-4">
-                <svg class="animate-spin h-12 w-12 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-900">Génération de la carte</h3>
+                    <button onclick="document.getElementById('modalGenerationCarte').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="text-center py-6">
+                    <div id="generation-carte-spinner" class="mx-auto mb-4">
+                        <svg class="animate-spin h-12 w-12 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </div>
+                    <div id="generation-carte-success" class="hidden mx-auto mb-4">
+                        <svg class="h-12 w-12 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div id="generation-carte-error" class="hidden mx-auto mb-4">
+                        <svg class="h-12 w-12 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                    <p id="generation-carte-status" class="text-gray-700 text-lg font-medium mb-2">Génération en cours...</p>
+                    <p id="generation-carte-subtitle" class="text-gray-500 text-sm mb-4">Cette opération peut prendre quelques minutes.</p>
+                </div>
+
+                <div class="flex justify-end gap-3 border-t pt-4">
+                    <a id="generation-carte-download" href="{{ route('export.carte') }}" class="hidden px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium">
+                        Télécharger la carte
+                    </a>
+                    <button onclick="document.getElementById('modalGenerationCarte').classList.add('hidden')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium">
+                        Fermer
+                    </button>
+                </div>
             </div>
-            <div id="generation-carte-success" class="hidden mx-auto mb-4">
-                <svg class="h-12 w-12 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <div id="generation-carte-error" class="hidden mx-auto mb-4">
-                <svg class="h-12 w-12 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </div>
-            <p id="generation-carte-status" class="text-gray-700 text-lg font-medium mb-4">Génération de la carte en cours...</p>
-            <p class="text-gray-500 text-sm mb-4">Cette opération peut prendre quelques minutes.</p>
-            <button id="generation-carte-close" class="hidden px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="document.getElementById('modalGenerationCarte').classList.add('hidden')">
-                Fermer
-            </button>
         </div>
     </div>
 
