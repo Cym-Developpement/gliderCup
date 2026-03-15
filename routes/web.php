@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportGpsController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\OpenAIPController;
 use App\Http\Controllers\OpenAIPTileController;
@@ -32,6 +33,9 @@ Route::get('/img/marker/{numero}', function ($numero) {
     $svg = str_replace('#PP', $numero, $svg);
     return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
 })->where('numero', '[0-9]+')->name('marker.svg');
+
+// Export GPS des points de virage
+Route::get('/export/gps/{format}', [ExportGpsController::class, 'export'])->name('export.gps');
 
 // Route de déploiement (GET manuel + POST webhook GitHub)
 Route::match(['get', 'post'], '/update', [DeployController::class, 'update'])->name('deploy.update');

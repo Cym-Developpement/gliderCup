@@ -33,3 +33,6 @@ auth.json
 
 # Cache avec secrets en clair
 bootstrap/cache/
+
+# Dossier de travail
+/work/
