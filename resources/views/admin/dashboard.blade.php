@@ -7,6 +7,15 @@
     <title>Administration - Wassmer Cup</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
+        /* Force le curseur crosshair en mode édition (priorité sur leaflet-grab) */
+        .carte-mode-edition,
+        .carte-mode-edition .leaflet-grab,
+        .carte-mode-edition .leaflet-interactive,
+        .carte-mode-edition .leaflet-marker-icon,
+        .carte-mode-edition .leaflet-tile-pane,
+        .carte-mode-edition .leaflet-overlay-pane {
+            cursor: crosshair !important;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-white to-sky-50 min-h-screen">
@@ -1877,12 +1886,10 @@
             cartePointsVirage.touchZoom.disable();
             cartePointsVirage.boxZoom.disable();
 
-            // Utiliser la classe native Leaflet pour le curseur crosshair
-            // et retirer leaflet-grab qui override le curseur
-            const container = cartePointsVirage.getContainer();
-            if (container) {
-                container.classList.add('leaflet-crosshair');
-                container.classList.remove('leaflet-grab');
+            // Appliquer le curseur crosshair sur le conteneur parent de la carte
+            const carteElement = document.getElementById('carte-points-virage');
+            if (carteElement) {
+                carteElement.classList.add('carte-mode-edition');
             }
 
             // Ajouter un listener sur la carte pour récupérer les coordonnées au clic
@@ -1909,12 +1916,12 @@
                 cartePointsVirage.touchZoom.enable();
                 cartePointsVirage.boxZoom.enable();
 
-                // Restaurer la classe native Leaflet pour le curseur grab
-                const container = cartePointsVirage.getContainer();
-                if (container) {
-                    container.classList.remove('leaflet-crosshair');
-                    container.classList.add('leaflet-grab');
-                }
+            }
+
+            // Retirer le curseur crosshair
+            const carteElement = document.getElementById('carte-points-virage');
+            if (carteElement) {
+                carteElement.classList.remove('carte-mode-edition');
             }
 
             // Retirer le listener de clic sur la carte
