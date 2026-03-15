@@ -1042,12 +1042,17 @@ class AdminController extends Controller
 
         if ($request->hasFile('image')) {
             // Supprimer l'ancienne image
-            if ($point->image && Storage::disk('public')->exists($point->image)) {
-                Storage::disk('public')->delete($point->image);
+            if ($point->image && file_exists(public_path($point->image))) {
+                unlink(public_path($point->image));
             }
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $point->image = $file->storeAs('points_virage', $filename, 'public');
+            $destDir = public_path('uploads/points_virage');
+            if (!is_dir($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+            $file->move($destDir, $filename);
+            $point->image = 'uploads/points_virage/' . $filename;
         }
 
         $point->save();
@@ -1077,8 +1082,8 @@ class AdminController extends Controller
 
         $point = PointVirage::where('competition_id', $competition->id)->findOrFail($id);
 
-        if ($point->image && Storage::disk('public')->exists($point->image)) {
-            Storage::disk('public')->delete($point->image);
+        if ($point->image && file_exists(public_path($point->image))) {
+            unlink(public_path($point->image));
         }
 
         $point->delete();

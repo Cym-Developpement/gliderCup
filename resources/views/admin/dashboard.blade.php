@@ -1811,7 +1811,7 @@
             document.getElementById('editPointImage').value = '';
             document.getElementById('editPointFeedback').classList.add('hidden');
             if (p.image) {
-                document.getElementById('editPointImageImg').src = '/storage/' + p.image;
+                document.getElementById('editPointImageImg').src = '/' + p.image;
                 document.getElementById('editPointImagePreview').classList.remove('hidden');
             } else {
                 document.getElementById('editPointImagePreview').classList.add('hidden');
@@ -1938,7 +1938,7 @@
                                 </button>
                             </div>
                         </div>
-                        ${p.image ? `<img src="/storage/${p.image}" alt="${p.nom}" class="mt-2 max-h-20 rounded border">` : ''}
+                        ${p.image ? `<img src="/${p.image}" alt="${p.nom}" class="mt-2 max-h-20 rounded border">` : ''}
                     </div>
                 `;
             }).join('');
