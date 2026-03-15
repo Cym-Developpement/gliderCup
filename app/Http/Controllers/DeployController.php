@@ -118,11 +118,20 @@ class DeployController extends Controller
             }
 
             if (file_exists($composerPhar)) {
+                // Supprimer les paquets ycdev pour forcer la réinstallation avec le bon autoload
+                foreach (['paper-size', 'php-osm-static-aero'] as $pkg) {
+                    $pkgDir = $basePath . '/vendor/ycdev/' . $pkg;
+                    if (is_dir($pkgDir)) {
+                        (new Process(['rm', '-rf', $pkgDir]))->run();
+                    }
+                }
+                @unlink($basePath . '/composer.lock');
+
                 $composer = new Process([$this->getPhpBinary(), 'composer.phar', 'update', '--no-dev', '--no-interaction', '--optimize-autoloader', '--ignore-platform-reqs'], $basePath);
                 $composer->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
                 $composer->setTimeout(300);
                 $composer->run();
-                $composerOutput = $composer->isSuccessful() ? $composer->getOutput() : 'Erreur composer : ' . $composer->getErrorOutput();
+                $composerOutput = 'STDOUT: ' . $composer->getOutput() . "\nSTDERR: " . $composer->getErrorOutput();
             }
 
             // Vider le cache après composer update

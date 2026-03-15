@@ -9,7 +9,7 @@
         "php": "^8.2",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
-        "ycdev/paper-size": "^0.2.1",
+        "ycdev/paper-size": "^0.2.2",
         "ycdev/php-osm-static-aero": "dev-master"
     },
     "require-dev": {
