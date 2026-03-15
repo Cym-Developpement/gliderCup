@@ -142,9 +142,11 @@ class DeployController extends Controller
                 $composer->run();
                 $composerOutput = 'STDOUT: ' . $composer->getOutput() . "\nSTDERR: " . $composer->getErrorOutput();
 
-                // Vider OPcache pour que PHP charge les nouveaux fichiers
-                if (function_exists('opcache_reset')) {
-                    opcache_reset();
+                // Vider les caches Laravel
+                try {
+                    Artisan::call('optimize:clear');
+                } catch (\Exception $e) {
+                    // ignore
                 }
             }
 
