@@ -62,7 +62,9 @@ class DeployController extends Controller
             }
 
             // Lancer les migrations automatiquement après le pull
-            $migrate = new Process(['php', 'artisan', 'migrate', '--force'], $basePath);
+            // PHP_BINARY donne le chemin absolu du binaire PHP en cours (compatible OVH mutualisé)
+            $phpBin = PHP_BINARY ?: 'php';
+            $migrate = new Process([$phpBin, 'artisan', 'migrate', '--force'], $basePath);
             $migrate->setTimeout(120);
             $migrate->run();
 
