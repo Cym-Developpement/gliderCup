@@ -36,3 +36,7 @@ bootstrap/cache/
 
 # Dossier de travail
 /work/
+
+# Composer
+/composer.phar
+/.composer/

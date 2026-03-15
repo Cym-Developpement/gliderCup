@@ -119,6 +119,7 @@ class DeployController extends Controller
 
             if (file_exists($composerPhar)) {
                 $composer = new Process([$this->getPhpBinary(), 'composer.phar', 'update', '--no-dev', '--no-interaction', '--optimize-autoloader'], $basePath);
+                $composer->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
                 $composer->setTimeout(300);
                 $composer->run();
                 $composerOutput = $composer->isSuccessful() ? $composer->getOutput() : 'Erreur composer : ' . $composer->getErrorOutput();
