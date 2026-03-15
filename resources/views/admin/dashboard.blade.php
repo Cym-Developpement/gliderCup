@@ -1901,11 +1901,15 @@
 
             cartePointsVirage.on('click', clickHandler);
 
-            // Ajouter un listener sur le document pour détecter les clics hors de la carte
-            document.addEventListener('click', desactiverModeEditionSiHorsCarte);
+            // Écouter les clics hors carte pour désactiver le mode édition
+            // setTimeout pour ne pas capter le clic du bouton "Ajouter" lui-même
+            setTimeout(() => {
+                document.addEventListener('click', desactiverModeEditionSiHorsCarte);
+            }, 0);
         }
 
         function desactiverModeEdition() {
+            if (!modeEdition) return;
             modeEdition = false;
 
             if (cartePointsVirage) {
@@ -1915,7 +1919,6 @@
                 cartePointsVirage.doubleClickZoom.enable();
                 cartePointsVirage.touchZoom.enable();
                 cartePointsVirage.boxZoom.enable();
-
             }
 
             // Retirer le curseur crosshair
@@ -1935,8 +1938,9 @@
         }
 
         function desactiverModeEditionSiHorsCarte(event) {
-            // Vérifier si le clic est en dehors de la carte
             const carteElement = document.getElementById('carte-points-virage');
+            // Ignorer si clic sur le bouton "Ajouter un point de virage"
+            if (event.target.closest('button[onclick*="activerModeEdition"]')) return;
             if (carteElement && !carteElement.contains(event.target)) {
                 desactiverModeEdition();
             }
