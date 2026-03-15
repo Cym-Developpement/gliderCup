@@ -107,16 +107,14 @@ class DeployController extends Controller
             $composerOutput = null;
             $composerPhar = $basePath . '/composer.phar';
             if (!file_exists($composerPhar)) {
-                $install = new Process([$this->getPhpBinary(), '-r', "copy('https://getcomposer.org/installer', 'composer-setup.php');"], $basePath);
-                $install->setTimeout(60);
-                $install->run();
-
-                $setup = new Process([$this->getPhpBinary(), 'composer-setup.php'], $basePath);
-                $setup->setTimeout(60);
-                $setup->run();
-
-                $cleanup = new Process([$this->getPhpBinary(), '-r', "unlink('composer-setup.php');"], $basePath);
-                $cleanup->run();
+                // Téléchargement direct du phar
+                $phar = @file_get_contents('https://getcomposer.org/composer-stable.phar');
+                if ($phar !== false) {
+                    file_put_contents($composerPhar, $phar);
+                    chmod($composerPhar, 0755);
+                } else {
+                    $composerOutput = 'Erreur : impossible de télécharger composer.phar';
+                }
             }
 
             if (file_exists($composerPhar)) {
