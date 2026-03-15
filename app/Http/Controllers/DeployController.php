@@ -143,6 +143,13 @@ class DeployController extends Controller
                 }
             }
 
+            // Vider le cache des vues compilées
+            try {
+                Artisan::call('view:clear');
+            } catch (\Exception $e) {
+                // ignore
+            }
+
             // Lancer les migrations directement dans le processus PHP courant
             try {
                 Artisan::call('migrate', ['--force' => true]);
