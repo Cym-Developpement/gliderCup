@@ -1163,13 +1163,16 @@
                     dropdown.classList.add('hidden');
                     dropdown.style.visibility = '';
 
-                    const spaceBelow = window.innerHeight - rect.bottom;
-                    if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+                    const spaceBelow = window.innerHeight - rect.bottom - 8;
+                    const spaceAbove = rect.top - 8;
+                    if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
                         dropdown.style.top = '';
                         dropdown.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+                        dropdown.style.maxHeight = spaceAbove + 'px';
                     } else {
                         dropdown.style.bottom = '';
                         dropdown.style.top = (rect.bottom + 4) + 'px';
+                        dropdown.style.maxHeight = spaceBelow + 'px';
                     }
                     dropdown.style.right = (window.innerWidth - rect.right) + 'px';
                     dropdown.style.left = '';
