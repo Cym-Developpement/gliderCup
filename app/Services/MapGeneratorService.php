@@ -10,7 +10,7 @@ use Ycdev\OsmStaticAero\LatLng;
 use Ycdev\OsmStaticAero\PaperMap;
 use Ycdev\OsmStaticAero\Text;
 use Ycdev\OsmStaticAero\TileLayer;
-use Ycdev\PaperSize\PaperSize;
+use Ycdev\PaperSize;
 
 class MapGeneratorService
 {
