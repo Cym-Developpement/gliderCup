@@ -1675,6 +1675,55 @@
         </div>
     </div>
 
+    <!-- Modal édition d'un point de virage -->
+    <div id="modalEditPoint" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalEditPointTitre" class="text-lg font-bold text-gray-900">Point de virage</h3>
+                <button onclick="fermerModalEditPoint()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="editPointFeedback" class="hidden mb-3 px-4 py-2 rounded text-sm"></div>
+            <form id="formEditPoint" enctype="multipart/form-data">
+                <input type="hidden" id="editPointId" value="">
+                <input type="hidden" id="editPointLat" value="">
+                <input type="hidden" id="editPointLng" value="">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                        <input type="text" id="editPointNom" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Coordonnées</label>
+                        <p id="editPointCoords" class="text-sm text-gray-500 font-mono"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="editPointDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Description du point de virage..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                        <div id="editPointImagePreview" class="mb-2 hidden">
+                            <img id="editPointImageImg" src="" alt="" class="max-h-32 rounded border">
+                        </div>
+                        <input type="file" id="editPointImage" accept=".jpg,.jpeg,.png,.webp" class="w-full text-sm border border-gray-300 rounded px-2 py-1">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="fermerModalEditPoint()" class="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                        Annuler
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function ouvrirModalReglement() {
             document.getElementById('modalReglement').classList.remove('hidden');
@@ -1703,11 +1752,11 @@
         let cartePointsVirage = null;
         let modeEdition = false;
         let clickHandler = null;
-        let pointsVirage = []; // Liste des points de virage [{nom, lat, lng, marker}]
-        let markersVirage = []; // Marqueurs Leaflet
-        let baseCoords = null; // Coordonnées de l'aérodrome de base
+        let pointsVirage = []; // [{id, nom, description, image, lat, lng, marker}]
+        let baseCoords = null;
+        let pendingLatLng = null; // Coordonnées en attente lors de l'ajout
 
-        // Calcul de la distance en km entre deux points GPS (formule de Haversine)
+        // Calcul de la distance en km (Haversine)
         function distanceKm(lat1, lng1, lat2, lng2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1718,38 +1767,135 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        // Ajouter un point de virage à la liste et sur la carte
-        function ajouterPointVirage(lat, lng, nom = null) {
-            const index = pointsVirage.length + 1;
-            if (!nom) {
-                nom = prompt('Nom du point de virage :', 'Point ' + index);
-                if (!nom) return; // Annulé
-            }
+        // Créer un marqueur pour un point
+        function creerMarqueur(point) {
+            const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], point.lat, point.lng).toFixed(1) : null;
+            const marker = L.marker([point.lat, point.lng]).addTo(cartePointsVirage)
+                .bindPopup(`<b>${point.nom}</b><br>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}`);
+            return marker;
+        }
 
-            const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], lat, lng).toFixed(1) : null;
-
-            // Ajouter le marqueur sur la carte
-            const marker = L.marker([lat, lng]).addTo(cartePointsVirage)
-                .bindPopup(`<b>${nom}</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}`);
-
-            const point = { nom, lat, lng, marker };
-            pointsVirage.push(point);
-
-            rafraichirListePoints();
+        // Ouvrir la modal d'édition pour un nouveau point (depuis le clic carte)
+        function ouvrirModalNouveauPoint(lat, lng) {
+            pendingLatLng = { lat, lng };
+            document.getElementById('modalEditPointTitre').textContent = 'Nouveau point de virage';
+            document.getElementById('editPointId').value = '';
+            document.getElementById('editPointLat').value = lat;
+            document.getElementById('editPointLng').value = lng;
+            document.getElementById('editPointNom').value = 'Point ' + (pointsVirage.length + 1);
+            document.getElementById('editPointCoords').textContent = lat.toFixed(5) + ', ' + lng.toFixed(5);
+            document.getElementById('editPointDescription').value = '';
+            document.getElementById('editPointImage').value = '';
+            document.getElementById('editPointImagePreview').classList.add('hidden');
+            document.getElementById('editPointFeedback').classList.add('hidden');
+            document.getElementById('modalEditPoint').classList.remove('hidden');
             desactiverModeEdition();
         }
 
-        // Supprimer un point de virage
-        function supprimerPointVirage(index) {
-            const point = pointsVirage[index];
-            if (point && point.marker) {
-                cartePointsVirage.removeLayer(point.marker);
+        // Ouvrir la modal d'édition pour un point existant
+        function ouvrirModalEditerPoint(index) {
+            const p = pointsVirage[index];
+            if (!p) return;
+            pendingLatLng = null;
+            document.getElementById('modalEditPointTitre').textContent = 'Modifier le point de virage';
+            document.getElementById('editPointId').value = p.id || '';
+            document.getElementById('editPointLat').value = p.lat;
+            document.getElementById('editPointLng').value = p.lng;
+            document.getElementById('editPointNom').value = p.nom;
+            document.getElementById('editPointCoords').textContent = p.lat.toFixed(5) + ', ' + p.lng.toFixed(5);
+            document.getElementById('editPointDescription').value = p.description || '';
+            document.getElementById('editPointImage').value = '';
+            document.getElementById('editPointFeedback').classList.add('hidden');
+            if (p.image) {
+                document.getElementById('editPointImageImg').src = '/storage/' + p.image;
+                document.getElementById('editPointImagePreview').classList.remove('hidden');
+            } else {
+                document.getElementById('editPointImagePreview').classList.add('hidden');
             }
+            document.getElementById('modalEditPoint').classList.remove('hidden');
+        }
+
+        function fermerModalEditPoint() {
+            document.getElementById('modalEditPoint').classList.add('hidden');
+            pendingLatLng = null;
+        }
+
+        // Soumission du formulaire d'édition (create ou update)
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('formEditPoint').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const feedback = document.getElementById('editPointFeedback');
+                const id = document.getElementById('editPointId').value;
+                const formData = new FormData();
+                formData.append('nom', document.getElementById('editPointNom').value);
+                formData.append('description', document.getElementById('editPointDescription').value);
+                formData.append('latitude', document.getElementById('editPointLat').value);
+                formData.append('longitude', document.getElementById('editPointLng').value);
+                const imageFile = document.getElementById('editPointImage').files[0];
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+
+                try {
+                    const url = id ? `/admin/points-virage/${id}` : '/admin/points-virage';
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                        body: formData,
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        const pt = result.point;
+                        if (id) {
+                            // Mise à jour d'un point existant
+                            const idx = pointsVirage.findIndex(p => String(p.id) === String(id));
+                            if (idx !== -1) {
+                                if (pointsVirage[idx].marker) cartePointsVirage.removeLayer(pointsVirage[idx].marker);
+                                pt.marker = creerMarqueur(pt);
+                                pointsVirage[idx] = pt;
+                            }
+                        } else {
+                            // Nouveau point
+                            pt.marker = creerMarqueur(pt);
+                            pointsVirage.push(pt);
+                        }
+                        rafraichirListePoints();
+                        fermerModalEditPoint();
+                    } else {
+                        feedback.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                        feedback.classList.add('bg-red-100', 'text-red-800');
+                        feedback.textContent = result.message || 'Erreur lors de l\'enregistrement.';
+                    }
+                } catch (err) {
+                    feedback.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                    feedback.classList.add('bg-red-100', 'text-red-800');
+                    feedback.textContent = 'Erreur réseau.';
+                }
+            });
+        });
+
+        // Supprimer un point de virage
+        async function supprimerPointVirage(index) {
+            const point = pointsVirage[index];
+            if (!point) return;
+            if (!confirm('Supprimer le point "' + point.nom + '" ?')) return;
+
+            if (point.id) {
+                try {
+                    await fetch(`/admin/points-virage/${point.id}`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    });
+                } catch (err) {
+                    console.error('Erreur suppression:', err);
+                }
+            }
+            if (point.marker) cartePointsVirage.removeLayer(point.marker);
             pointsVirage.splice(index, 1);
             rafraichirListePoints();
         }
 
-        // Rafraîchir l'affichage de la liste dans le panneau droit
+        // Rafraîchir la liste dans le panneau droit
         function rafraichirListePoints() {
             const container = document.getElementById('listePointsVirage');
             if (!container) return;
@@ -1762,34 +1908,53 @@
             container.innerHTML = pointsVirage.map((p, i) => {
                 const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], p.lat, p.lng).toFixed(1) : null;
                 return `
-                    <div class="bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-start">
-                        <div class="cursor-pointer flex-1" onclick="cartePointsVirage.setView([${p.lat}, ${p.lng}], 13); pointsVirage[${i}].marker.openPopup();">
-                            <div class="font-semibold text-gray-800">${p.nom}</div>
-                            <div class="text-xs text-gray-500">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
-                            ${dist ? `<div class="text-xs text-blue-600">${dist} km de la base</div>` : ''}
+                    <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                        <div class="flex justify-between items-start">
+                            <div class="cursor-pointer flex-1" onclick="cartePointsVirage.setView([${p.lat}, ${p.lng}], 13); pointsVirage[${i}].marker.openPopup();">
+                                <div class="font-semibold text-gray-800">${p.nom}</div>
+                                <div class="text-xs text-gray-500">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
+                                ${dist ? `<div class="text-xs text-blue-600">${dist} km de la base</div>` : ''}
+                                ${p.description ? `<div class="text-xs text-gray-600 mt-1 truncate">${p.description}</div>` : ''}
+                            </div>
+                            <div class="flex gap-1 ml-2">
+                                <button onclick="ouvrirModalEditerPoint(${i})" class="text-blue-400 hover:text-blue-600 p-1" title="Modifier">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="supprimerPointVirage(${i})" class="text-red-400 hover:text-red-600 p-1" title="Supprimer">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
-                        <button onclick="supprimerPointVirage(${i})" class="text-red-400 hover:text-red-600 ml-2 p-1" title="Supprimer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
+                        ${p.image ? `<img src="/storage/${p.image}" alt="${p.nom}" class="mt-2 max-h-20 rounded border">` : ''}
                     </div>
                 `;
             }).join('');
         }
 
-        // Stubs pour lecture/écriture backend (à implémenter)
+        // Charger les points depuis le backend
         async function chargerPointsVirage() {
-            // TODO: fetch GET /admin/points-virage → [{nom, lat, lng}, ...]
-            // Pour l'instant, retourne un tableau vide
+            try {
+                const response = await fetch('/admin/points-virage', {
+                    headers: { 'Accept': 'application/json' },
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.success ? data.points : [];
+                }
+            } catch (err) {
+                console.error('Erreur chargement points:', err);
+            }
             return [];
         }
 
+        // Le bouton Sauvegarder n'est plus nécessaire (sauvegarde individuelle),
+        // on le garde pour feedback
         async function sauvegarderPointsVirage() {
-            const data = pointsVirage.map(p => ({ nom: p.nom, lat: p.lat, lng: p.lng }));
-            // TODO: fetch POST /admin/points-virage avec data
-            console.log('Points à sauvegarder:', data);
-            alert('Sauvegarde à implémenter (' + data.length + ' points)');
+            alert('Les points sont sauvegardés automatiquement à chaque ajout ou modification.');
         }
 
         function chargerLeaflet() {
@@ -1924,9 +2089,12 @@
                         }
                     }, 200);
 
-                    // Charger les points de virage existants
+                    // Charger les points de virage existants depuis le backend
                     const pointsExistants = await chargerPointsVirage();
-                    pointsExistants.forEach(p => ajouterPointVirage(p.lat, p.lng, p.nom));
+                    pointsExistants.forEach(p => {
+                        p.marker = creerMarqueur(p);
+                        pointsVirage.push(p);
+                    });
                     rafraichirListePoints();
                 } else {
                     // Si la carte existe déjà, recentrer sur l'aérodrome et forcer le redimensionnement
@@ -1987,9 +2155,9 @@
                 carteElement.classList.add('carte-mode-edition');
             }
 
-            // Ajouter un listener sur la carte pour placer un point au clic
+            // Ajouter un listener sur la carte pour ouvrir la modal de création
             clickHandler = function(e) {
-                ajouterPointVirage(e.latlng.lat, e.latlng.lng);
+                ouvrirModalNouveauPoint(e.latlng.lat, e.latlng.lng);
             };
 
             cartePointsVirage.on('click', clickHandler);

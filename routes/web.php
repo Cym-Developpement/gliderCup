@@ -75,6 +75,9 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/messages/groupes', [AdminController::class, 'listeMessagesGroupes'])->name('messages.groupes');
     Route::post('/competition/reglement', [AdminController::class, 'updateReglement'])->name('competition.reglement.update');
     Route::post('/competition/code-aeroport', [AdminController::class, 'updateCodeAeroport'])->name('competition.code-aeroport.update');
+    Route::get('/points-virage', [AdminController::class, 'getPointsVirage'])->name('points-virage.index');
+    Route::post('/points-virage/{id?}', [AdminController::class, 'savePointVirage'])->name('points-virage.save');
+    Route::delete('/points-virage/{id}', [AdminController::class, 'deletePointVirage'])->name('points-virage.delete');
     Route::post('/competition/search-airport', [AdminController::class, 'searchAirport'])->name('competition.search-airport');
     Route::get('/competition/airport-data/{icao}', [AdminController::class, 'getAirportData'])->name('competition.airport-data');
     Route::get('/paiement/test', [\App\Http\Controllers\PaiementController::class, 'test'])->name('paiement.test');

@@ -15,6 +15,7 @@ class PointVirage extends Model
         'longitude',
         'points',
         'public',
+        'image',
     ];
 
     protected function casts(): array

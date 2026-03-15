@@ -19,6 +19,7 @@ use App\Notifications\MessageContact;
 use App\Notifications\ReponseContact;
 use App\Models\Message;
 use App\Models\MessageGroupe;
+use App\Models\PointVirage;
 use App\Services\OpenAipService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -982,5 +983,106 @@ class AdminController extends Controller
             'success' => false,
             'error' => 'Données aérodrome non trouvées',
         ], 404);
+    }
+
+    /**
+     * Liste les points de virage de la compétition active
+     */
+    public function getPointsVirage()
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $points = $competition->pointsVirage()->orderBy('nom')->get();
+
+        return response()->json([
+            'success' => true,
+            'points' => $points->map(fn($p) => [
+                'id' => $p->id,
+                'nom' => $p->nom,
+                'description' => $p->description,
+                'image' => $p->image,
+                'lat' => (float) $p->latitude,
+                'lng' => (float) $p->longitude,
+            ]),
+        ]);
+    }
+
+    /**
+     * Crée ou met à jour un point de virage
+     */
+    public function savePointVirage(Request $request, $id = null)
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        if ($id) {
+            $point = PointVirage::where('competition_id', $competition->id)->findOrFail($id);
+        } else {
+            $point = new PointVirage();
+            $point->competition_id = $competition->id;
+        }
+
+        $point->nom = $validated['nom'];
+        $point->description = $validated['description'] ?? null;
+        $point->latitude = $validated['latitude'];
+        $point->longitude = $validated['longitude'];
+
+        if ($request->hasFile('image')) {
+            // Supprimer l'ancienne image
+            if ($point->image && Storage::disk('public')->exists($point->image)) {
+                Storage::disk('public')->delete($point->image);
+            }
+            $file = $request->file('image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $point->image = $file->storeAs('points_virage', $filename, 'public');
+        }
+
+        $point->save();
+
+        return response()->json([
+            'success' => true,
+            'point' => [
+                'id' => $point->id,
+                'nom' => $point->nom,
+                'description' => $point->description,
+                'image' => $point->image,
+                'lat' => (float) $point->latitude,
+                'lng' => (float) $point->longitude,
+            ],
+        ]);
+    }
+
+    /**
+     * Supprime un point de virage
+     */
+    public function deletePointVirage($id)
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $point = PointVirage::where('competition_id', $competition->id)->findOrFail($id);
+
+        if ($point->image && Storage::disk('public')->exists($point->image)) {
+            Storage::disk('public')->delete($point->image);
+        }
+
+        $point->delete();
+
+        return response()->json(['success' => true]);
     }
 }
