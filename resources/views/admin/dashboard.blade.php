@@ -1659,18 +1659,18 @@
                         </svg>
                     </button>
                 </div>
-                <div class="space-y-2">
-                    <!-- Les boutons seront ajoutés ici -->
-                    <button onclick="activerModeEdition()" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                <div class="space-y-2 mb-4">
+                    <button onclick="activerModeEdition()" id="btnAjouterPoint" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                         Ajouter un point de virage
                     </button>
-                    <button class="w-full px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
+                    <button onclick="sauvegarderPointsVirage()" class="w-full px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
                         Sauvegarder
                     </button>
                     <button onclick="fermerModalCartePointsVirage()" class="w-full px-3 py-2 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
-                        Annuler
+                        Fermer
                     </button>
                 </div>
+                <div id="listePointsVirage" class="space-y-2 text-sm"></div>
             </div>
         </div>
     </div>
@@ -1703,6 +1703,94 @@
         let cartePointsVirage = null;
         let modeEdition = false;
         let clickHandler = null;
+        let pointsVirage = []; // Liste des points de virage [{nom, lat, lng, marker}]
+        let markersVirage = []; // Marqueurs Leaflet
+        let baseCoords = null; // Coordonnées de l'aérodrome de base
+
+        // Calcul de la distance en km entre deux points GPS (formule de Haversine)
+        function distanceKm(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        // Ajouter un point de virage à la liste et sur la carte
+        function ajouterPointVirage(lat, lng, nom = null) {
+            const index = pointsVirage.length + 1;
+            if (!nom) {
+                nom = prompt('Nom du point de virage :', 'Point ' + index);
+                if (!nom) return; // Annulé
+            }
+
+            const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], lat, lng).toFixed(1) : null;
+
+            // Ajouter le marqueur sur la carte
+            const marker = L.marker([lat, lng]).addTo(cartePointsVirage)
+                .bindPopup(`<b>${nom}</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}`);
+
+            const point = { nom, lat, lng, marker };
+            pointsVirage.push(point);
+
+            rafraichirListePoints();
+            desactiverModeEdition();
+        }
+
+        // Supprimer un point de virage
+        function supprimerPointVirage(index) {
+            const point = pointsVirage[index];
+            if (point && point.marker) {
+                cartePointsVirage.removeLayer(point.marker);
+            }
+            pointsVirage.splice(index, 1);
+            rafraichirListePoints();
+        }
+
+        // Rafraîchir l'affichage de la liste dans le panneau droit
+        function rafraichirListePoints() {
+            const container = document.getElementById('listePointsVirage');
+            if (!container) return;
+
+            if (pointsVirage.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 italic">Aucun point de virage</p>';
+                return;
+            }
+
+            container.innerHTML = pointsVirage.map((p, i) => {
+                const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], p.lat, p.lng).toFixed(1) : null;
+                return `
+                    <div class="bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-start">
+                        <div class="cursor-pointer flex-1" onclick="cartePointsVirage.setView([${p.lat}, ${p.lng}], 13); pointsVirage[${i}].marker.openPopup();">
+                            <div class="font-semibold text-gray-800">${p.nom}</div>
+                            <div class="text-xs text-gray-500">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
+                            ${dist ? `<div class="text-xs text-blue-600">${dist} km de la base</div>` : ''}
+                        </div>
+                        <button onclick="supprimerPointVirage(${i})" class="text-red-400 hover:text-red-600 ml-2 p-1" title="Supprimer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Stubs pour lecture/écriture backend (à implémenter)
+        async function chargerPointsVirage() {
+            // TODO: fetch GET /admin/points-virage → [{nom, lat, lng}, ...]
+            // Pour l'instant, retourne un tableau vide
+            return [];
+        }
+
+        async function sauvegarderPointsVirage() {
+            const data = pointsVirage.map(p => ({ nom: p.nom, lat: p.lat, lng: p.lng }));
+            // TODO: fetch POST /admin/points-virage avec data
+            console.log('Points à sauvegarder:', data);
+            alert('Sauvegarde à implémenter (' + data.length + ' points)');
+        }
 
         function chargerLeaflet() {
             return new Promise((resolve) => {
@@ -1739,6 +1827,7 @@
 
         async function ouvrirModalCartePointsVirage() {
             document.getElementById('modalCartePointsVirage').classList.remove('hidden');
+            rafraichirListePoints();
             
             // Attendre que la modal soit visible avant d'initialiser la carte
             setTimeout(async () => {
@@ -1775,6 +1864,7 @@
                                     
                                     if (lat && lon) {
                                         center = [lat, lon];
+                                        baseCoords = [lat, lon];
                                         zoom = 11;
                                         airportName = data.airport.name || '{{ $competition->code_aeroport }}';
                                         console.log('Coordonnées aérodrome:', center, 'Zoom:', zoom);
@@ -1833,6 +1923,11 @@
                             cartePointsVirage.invalidateSize();
                         }
                     }, 200);
+
+                    // Charger les points de virage existants
+                    const pointsExistants = await chargerPointsVirage();
+                    pointsExistants.forEach(p => ajouterPointVirage(p.lat, p.lng, p.nom));
+                    rafraichirListePoints();
                 } else {
                     // Si la carte existe déjà, recentrer sur l'aérodrome et forcer le redimensionnement
                     cartePointsVirage.invalidateSize();
@@ -1892,11 +1987,9 @@
                 carteElement.classList.add('carte-mode-edition');
             }
 
-            // Ajouter un listener sur la carte pour récupérer les coordonnées au clic
+            // Ajouter un listener sur la carte pour placer un point au clic
             clickHandler = function(e) {
-                const lat = e.latlng.lat;
-                const lng = e.latlng.lng;
-                console.log('Coordonnées GPS cliquées:', { latitude: lat, longitude: lng });
+                ajouterPointVirage(e.latlng.lat, e.latlng.lng);
             };
 
             cartePointsVirage.on('click', clickHandler);
