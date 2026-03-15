@@ -66,6 +66,8 @@ class LoginController extends Controller
         $user = User::where('email', $email)->where('role', 'admin')->first();
         
         if ($user && Hash::check($password, $user->password)) {
+            $user->last_login_at = now();
+            $user->save();
             Auth::guard('web')->login($user, $request->filled('remember'));
             return redirect()->route('admin.dashboard');
         }

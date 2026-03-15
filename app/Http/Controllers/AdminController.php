@@ -1165,7 +1165,7 @@ class AdminController extends Controller
      */
     public function getAdmins()
     {
-        $admins = User::where('role', 'admin')->select('id', 'name', 'email')->orderBy('name')->get();
+        $admins = User::where('role', 'admin')->select('id', 'name', 'email', 'last_login_at')->orderBy('name')->get();
         return response()->json($admins);
     }
 

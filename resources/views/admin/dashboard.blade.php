@@ -2866,16 +2866,18 @@
                         <tr>
                             <th class="px-4 py-2 border-b text-left text-sm font-medium text-gray-700">Nom</th>
                             <th class="px-4 py-2 border-b text-left text-sm font-medium text-gray-700">Email</th>
+                            <th class="px-4 py-2 border-b text-left text-sm font-medium text-gray-700">Dernière connexion</th>
                             <th class="px-4 py-2 border-b text-left text-sm font-medium text-gray-700" style="width:160px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="adminsTableBody">
-                        <tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">Chargement...</td></tr>
+                        <tr><td colspan="4" class="px-4 py-3 text-center text-gray-500">Chargement...</td></tr>
                     </tbody>
                     <tfoot>
                         <tr class="bg-gray-50">
                             <td class="px-4 py-2 border-t"><input type="text" id="newAdminName" placeholder="Nom" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
                             <td class="px-4 py-2 border-t"><input type="email" id="newAdminEmail" placeholder="Email" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+                            <td class="px-4 py-2 border-t"></td>
                             <td class="px-4 py-2 border-t"><button onclick="ajouterAdmin()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">Ajouter</button></td>
                         </tr>
                     </tfoot>
@@ -2908,16 +2910,20 @@
                 .then(function(admins) {
                     tbody.innerHTML = '';
                     if (admins.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">Aucun administrateur.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-gray-500">Aucun administrateur.</td></tr>';
                         return;
                     }
                     admins.forEach(function(admin) {
                         var isSelf = admin.id === currentUserId;
+                        var loginInfo = admin.last_login_at
+                            ? '<span class="text-green-700">' + new Date(admin.last_login_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) + '</span>'
+                            : '<span class="text-red-500 italic">Jamais connecté</span>';
                         var tr = document.createElement('tr');
                         tr.className = 'hover:bg-gray-50';
                         tr.innerHTML =
                             '<td class="px-4 py-2 border-b text-sm">' + escHtml(admin.name) + '</td>' +
                             '<td class="px-4 py-2 border-b text-sm">' + escHtml(admin.email) + '</td>' +
+                            '<td class="px-4 py-2 border-b text-sm">' + loginInfo + '</td>' +
                             '<td class="px-4 py-2 border-b text-sm">' +
                                 '<button onclick="modifierAdminRow(' + admin.id + ', this)" class="text-blue-600 hover:text-blue-800 mr-2 text-sm" title="Modifier">Modifier</button>' +
                                 (isSelf ? '<span class="text-gray-400 text-xs">(vous)</span>' : '<button onclick="supprimerAdmin(' + admin.id + ')" class="text-red-600 hover:text-red-800 text-sm" title="Supprimer">Supprimer</button>') +
