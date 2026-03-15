@@ -125,6 +125,17 @@ class DeployController extends Controller
                 $composerOutput = $composer->isSuccessful() ? $composer->getOutput() : 'Erreur composer : ' . $composer->getErrorOutput();
             }
 
+            // Vider le cache après composer update
+            $cacheFiles = [
+                $basePath . '/bootstrap/cache/packages.php',
+                $basePath . '/bootstrap/cache/services.php',
+            ];
+            foreach ($cacheFiles as $cacheFile) {
+                if (file_exists($cacheFile)) {
+                    @unlink($cacheFile);
+                }
+            }
+
             // Lancer les migrations directement dans le processus PHP courant
             try {
                 Artisan::call('migrate', ['--force' => true]);
