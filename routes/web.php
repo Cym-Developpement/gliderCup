@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InscriptionController;
@@ -26,6 +27,9 @@ Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'send']
 Route::get('/api/openaip/data', [OpenAIPController::class, 'getData'])->name('openaip.data');
 Route::get('/api/openaip/tiles/{z}/{x}/{y}.png', [OpenAIPTileController::class, 'getTile'])->name('openaip.tiles');
 Route::get('/airport/{icao}', [\App\Http\Controllers\InscriptionController::class, 'getAirportData'])->name('airport.data');
+
+// Route de déploiement (GET manuel + POST webhook GitHub)
+Route::match(['get', 'post'], '/update', [DeployController::class, 'update'])->name('deploy.update');
 
 // Routes d'authentification
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
