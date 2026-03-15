@@ -1663,9 +1663,6 @@
                     <button onclick="activerModeEdition()" id="btnAjouterPoint" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                         Ajouter un point de virage
                     </button>
-                    <button onclick="fermerModalCartePointsVirage()" class="w-full px-3 py-2 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
-                        Fermer
-                    </button>
                 </div>
                 <div id="listePointsVirage" class="space-y-2 text-sm"></div>
             </div>
