@@ -118,7 +118,13 @@ class DeployController extends Controller
             }
 
             if (file_exists($composerPhar)) {
-                $composer = new Process([$this->getPhpBinary(), 'composer.phar', 'update', '--no-dev', '--no-interaction', '--optimize-autoloader'], $basePath);
+                // Vider le cache composer pour forcer la résolution des nouvelles versions
+                $clearCache = new Process([$this->getPhpBinary(), 'composer.phar', 'clear-cache', '--no-interaction'], $basePath);
+                $clearCache->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
+                $clearCache->setTimeout(30);
+                $clearCache->run();
+
+                $composer = new Process([$this->getPhpBinary(), 'composer.phar', 'update', '--no-dev', '--no-interaction', '--optimize-autoloader', '--ignore-platform-reqs'], $basePath);
                 $composer->setEnv(['HOME' => $basePath, 'COMPOSER_HOME' => $basePath . '/.composer']);
                 $composer->setTimeout(300);
                 $composer->run();
