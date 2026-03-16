@@ -178,12 +178,12 @@ class MapGeneratorService
         $black = imagecolorallocate($img, 0, 0, 0);
         $text = '#' . $numero;
         $fontPath = __DIR__ . '/../../vendor/ycdev/php-osm-static-aero/src/resources/SpaceMono-Bold.ttf';
-        $fontSize = 56;
+        $fontSize = 80;
         $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
         $tw = abs($bbox[2] - $bbox[0]);
         $th = abs($bbox[7] - $bbox[1]);
         $cx = ($w / 2) - ($tw / 2);
-        $cy = ($h * 0.22) + ($th / 2);
+        $cy = ($h * 0.22) + ($th);
         imagettftext($img, $fontSize, 0, (int) $cx, (int) $cy, $black, $fontPath, $text);
 
         $newW = (int) ($w / 3 * 0.7);
