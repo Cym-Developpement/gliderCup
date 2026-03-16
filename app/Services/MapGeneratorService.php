@@ -42,35 +42,13 @@ class MapGeneratorService
         );
 
         $map->draw()->addDraw(
-            (new Circle($center, '2563eb1a', 3, '2563eb99', true))
-                ->setRadius(1000)
+            (new Circle($center, '22c55e1a', 3, '22c55e99', true))
+                ->setRadius(1500)
         );
-
-        $baseMarkerPath = public_path('img/marker-base.png');
-        $baseImg = imagecreatefrompng($baseMarkerPath);
-        $origW = imagesx($baseImg);
-        $origH = imagesy($baseImg);
-        $newW = (int) ($origW / 1.5);
-        $newH = (int) ($origH / 1.5);
-        $resized = imagecreatetruecolor($newW, $newH);
-        imagealphablending($resized, false);
-        imagesavealpha($resized, true);
-        $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
-        imagefill($resized, 0, 0, $transparent);
-        imagecopyresampled($resized, $baseImg, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
-        $tmpBase = sys_get_temp_dir() . '/marker_base_small.png';
-        imagepng($resized, $tmpBase);
-        imagedestroy($baseImg);
-        imagedestroy($resized);
-
-        $markers = new Markers($tmpBase);
-        $markers->setAnchor(Markers::ANCHOR_CENTER, Markers::ANCHOR_BOTTOM);
-        $markers->addMarker($center);
-        $map->draw()->addMarkers($markers);
 
         $points = PointVirage::where('competition_id', $competition->id)->get();
 
-        $tempMarkers = [$tmpBase];
+        $tempMarkers = [];
         foreach ($points as $index => $point) {
             $pos = new LatLng($point->latitude, $point->longitude);
             $markerPath = self::generateMarkerPng($index + 1);
@@ -152,8 +130,8 @@ class MapGeneratorService
         $legendText .= "\n>>wassmercup.fr\n";
 
         $logoSrc = imagecreatefrompng(public_path('img/logo.png'));
-        $logoW = imagesx($logoSrc) * 2;
-        $logoH = imagesy($logoSrc) * 2;
+        $logoW = (int) (imagesx($logoSrc) * 3);
+        $logoH = (int) (imagesy($logoSrc) * 3);
         $logoBig = imagecreatetruecolor($logoW, $logoH);
         imagealphablending($logoBig, false);
         imagesavealpha($logoBig, true);
