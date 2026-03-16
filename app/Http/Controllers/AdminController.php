@@ -68,6 +68,11 @@ class AdminController extends Controller
 
         $inscriptions = $competition->pilotes()->with('planeurs')->orderBy('created_at', 'desc')->paginate(20);
 
+        $planeursInscrits = $competition->planeurs()
+            ->with(['piloteProprietaire', 'pilotes'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         // Récupérer tous les paiements HelloAsso (validés et non validés)
         // Filtrer les pilotes avec helloasso_checkout_intent_id non null et non vide
         // Note: On filtre d'abord en SQL, puis on filtre en PHP pour gérer les espaces (compatible SQLite)
@@ -105,6 +110,8 @@ class AdminController extends Controller
             'visitesAccueil' => $visitesAccueil,
             'visitesAccueilAujourdhui' => $visitesAccueilAujourdhui,
             'inscriptions' => $inscriptions,
+            'planeursInscrits' => $planeursInscrits,
+            'limitePlaneurs' => $competition->limite_planeurs,
             'paiementsHelloAsso' => $paiementsHelloAsso,
             'paiementsHelloAssoEnAttente' => $paiementsHelloAssoEnAttente,
             'messagesContact' => $messagesContact,

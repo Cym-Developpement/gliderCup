@@ -316,6 +316,82 @@
                 </div>
             @endif
 
+            <!-- Liste des planeurs inscrits -->
+            <div class="mt-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Planeurs inscrits</h2>
+                    <span class="text-sm text-gray-600">{{ $planeursInscrits->count() }} / {{ $limitePlaneurs }} planeurs</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-300">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 border-b text-left">Immatriculation</th>
+                                <th class="px-4 py-2 border-b text-left">Marque</th>
+                                <th class="px-4 py-2 border-b text-left">Modèle</th>
+                                <th class="px-4 py-2 border-b text-left">Type</th>
+                                <th class="px-4 py-2 border-b text-left">Propriétaire</th>
+                                <th class="px-4 py-2 border-b text-left">Pilotes inscrits</th>
+                                <th class="px-4 py-2 border-b text-left">Statut</th>
+                                <th class="px-4 py-2 border-b text-left">Date d'inscription</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($planeursInscrits as $planeur)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-2 border-b font-semibold">{{ $planeur->immatriculation }}</td>
+                                    <td class="px-4 py-2 border-b">{{ $planeur->marque ?? '-' }}</td>
+                                    <td class="px-4 py-2 border-b">{{ $planeur->modele }}</td>
+                                    <td class="px-4 py-2 border-b">{{ $planeur->type ? ucfirst($planeur->type) : '-' }}</td>
+                                    <td class="px-4 py-2 border-b">
+                                        @if($planeur->piloteProprietaire)
+                                            <p class="font-semibold">{{ $planeur->piloteProprietaire->prenom }} {{ $planeur->piloteProprietaire->nom }}</p>
+                                            <p class="text-sm text-gray-600">{{ $planeur->piloteProprietaire->email }}</p>
+                                        @else
+                                            <span class="text-gray-400">Non défini</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-2 border-b">
+                                        @if($planeur->pilotes->count() > 0)
+                                            <div class="space-y-1">
+                                                @foreach($planeur->pilotes as $pilote)
+                                                    <div class="text-sm">
+                                                        <span class="font-medium">{{ $pilote->prenom }} {{ $pilote->nom }}</span>
+                                                        @if($pilote->id === $planeur->pilote_id)
+                                                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded ml-1">Propriétaire</span>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-gray-400">Aucun pilote inscrit</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-2 border-b">
+                                        @if($planeur->statut === 'en_attente')
+                                            <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">En attente</span>
+                                        @elseif($planeur->statut === 'validee')
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Validé</span>
+                                        @elseif($planeur->statut === 'refusee')
+                                            <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm">Refusé</span>
+                                        @else
+                                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">{{ $planeur->statut ?? 'N/A' }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-2 border-b text-sm text-gray-600">
+                                        {{ $planeur->created_at->format('d/m/Y H:i') }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="px-4 py-4 text-center text-gray-500">Aucun planeur inscrit</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Table des paiements HelloAsso -->
             <div class="mt-8">
                 <div class="flex justify-between items-center mb-4">
