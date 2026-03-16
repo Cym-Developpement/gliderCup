@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Ycdev\OsmStaticAero\LatLng;
 use Ycdev\OsmStaticAero\PaperMap;
 use Ycdev\OsmStaticAero\Circle;
+use Ycdev\OsmStaticAero\Markers;
 use Ycdev\OsmStaticAero\Text;
 use Ycdev\OsmStaticAero\TileLayer;
 use Ycdev\PaperSize\PaperSize;
@@ -35,14 +36,19 @@ class MapGeneratorService
         $map = new PaperMap(
             PaperSize::landscape(PaperSize::A3),
             $center,
-            ['zoom' => 12, 'factor' => 2.0, 'bordure' => 5],
+            ['zoom' => 11, 'factor' => 2.0, 'bordure' => 5],
             [TileLayer::OSMFR, TileLayer::OPENAIP]
         );
 
         $map->draw()->addDraw(
-            (new Circle($center, '2563eb1a', 3, '2563eb99'))
+            (new Circle($center, '2563eb1a', 3, '2563eb99', true))
                 ->setRadius(1000)
         );
+
+        $markers = new Markers(public_path('img/marker-base.png'));
+        $markers->setAnchor(Markers::ANCHOR_CENTER, Markers::ANCHOR_BOTTOM);
+        $markers->addMarker($center);
+        $map->draw()->addMarkers($markers);
 
         $points = PointVirage::where('competition_id', $competition->id)->get();
 
