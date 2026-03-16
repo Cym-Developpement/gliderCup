@@ -139,6 +139,12 @@
                             <button onclick="ouvrirModalAdmins(); closeDropdownActions();" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
                                 Gérer les administrateurs
                             </button>
+
+                            <div class="border-t border-gray-200 my-1"></div>
+
+                            <a href="{{ route('admin.backup') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="closeDropdownActions();">
+                                Télécharger une sauvegarde
+                            </a>
                         </div>
                     </div>
                 </div>

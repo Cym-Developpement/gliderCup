@@ -1266,4 +1266,59 @@ class AdminController extends Controller
 
         return response()->json($info);
     }
+
+    public function backup()
+    {
+        $timestamp = now()->format('Y-m-d_H-i-s');
+        $filename = "backup_{$timestamp}.zip";
+        $destDir = storage_path('backups');
+
+        if (!is_dir($destDir)) {
+            mkdir($destDir, 0755, true);
+        }
+
+        $zipPath = $destDir . '/' . $filename;
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return back()->with('error', 'Impossible de créer le fichier de sauvegarde.');
+        }
+
+        // Base de données SQLite
+        $dbPath = database_path('database.sqlite');
+        if (file_exists($dbPath)) {
+            $zip->addFile($dbPath, 'database.sqlite');
+        }
+
+        // Fichiers uploadés (storage/app/public)
+        $publicStorage = storage_path('app/public');
+        if (is_dir($publicStorage)) {
+            $this->addDirectoryToZip($zip, $publicStorage, 'storage');
+        }
+
+        // Fichiers privés (storage/app/private)
+        $privateStorage = storage_path('app/private');
+        if (is_dir($privateStorage)) {
+            $this->addDirectoryToZip($zip, $privateStorage, 'private');
+        }
+
+        $zip->close();
+
+        return response()->download($zipPath, $filename)->deleteFileAfterSend(true);
+    }
+
+    private function addDirectoryToZip(\ZipArchive $zip, string $directory, string $prefix): void
+    {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $relativePath = $prefix . '/' . substr($file->getPathname(), strlen($directory) + 1);
+                $zip->addFile($file->getPathname(), $relativePath);
+            }
+        }
+    }
 }
