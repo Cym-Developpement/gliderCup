@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Ycdev\OsmStaticAero\LatLng;
 use Ycdev\OsmStaticAero\PaperMap;
 use Ycdev\OsmStaticAero\Circle;
+use Ycdev\OsmStaticAero\Legend;
 use Ycdev\OsmStaticAero\Markers;
 use Ycdev\OsmStaticAero\Text;
 use Ycdev\OsmStaticAero\TileLayer;
@@ -56,6 +57,16 @@ class MapGeneratorService
             $pos = new LatLng($point->latitude, $point->longitude);
             $map->draw()->addDraw(new Text($pos, $point->nom, 30, '000000'));
         }
+
+        $legendText = "\n# POINTS DE VIRAGE :\n\n";
+        foreach ($points as $index => $point) {
+            $legendText .= '## #' . ($index + 1) . ' ' . $point->nom . "\n";
+        }
+
+        $titre = $competition->nom . ' ' . $competition->date_debut->format('Y');
+        $map->draw()->addDraw(
+            new Legend(Legend::ALIGN_RIGHT, $legendText, 25, '000000', 'ffffff', 32, null, $titre)
+        );
 
         $slug = Str::slug($competition->nom);
         $relativePath = "maps/{$slug}.png";
