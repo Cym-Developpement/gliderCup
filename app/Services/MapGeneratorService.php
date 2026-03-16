@@ -130,8 +130,8 @@ class MapGeneratorService
         $legendText .= "\n>>wassmercup.fr\n";
 
         $logoSrc = imagecreatefrompng(public_path('img/logo.png'));
-        $logoW = (int) (imagesx($logoSrc) * 3);
-        $logoH = (int) (imagesy($logoSrc) * 3);
+        $logoW = (int) (imagesx($logoSrc) * 2.4);
+        $logoH = (int) (imagesy($logoSrc) * 2.4);
         $logoBig = imagecreatetruecolor($logoW, $logoH);
         imagealphablending($logoBig, false);
         imagesavealpha($logoBig, true);
@@ -186,9 +186,16 @@ class MapGeneratorService
         $cy = ($h * 0.22) + ($th / 2);
         imagettftext($img, $fontSize, 0, (int) $cx, (int) $cy, $black, $fontPath, $text);
 
-        imagealphablending($img, false);
-        imagepng($img, $tmpPng);
+        $newW = (int) ($w / 3);
+        $newH = (int) ($h / 3);
+        $resized = imagecreatetruecolor($newW, $newH);
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        imagefill($resized, 0, 0, imagecolorallocatealpha($resized, 0, 0, 0, 127));
+        imagecopyresampled($resized, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+        imagepng($resized, $tmpPng);
         imagedestroy($img);
+        imagedestroy($resized);
 
         return $tmpPng;
     }
