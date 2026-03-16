@@ -573,7 +573,7 @@
             btnText.textContent = 'Vérification en cours...';
 
             try {
-                const response = await fetch('{{ route("paiement.verifier-tous") }}');
+                const response = await fetch('{{ route("admin.paiement.verifier-tous") }}');
                 const data = await response.json();
 
                 if (data.success) {
