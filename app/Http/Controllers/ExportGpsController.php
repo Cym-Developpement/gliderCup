@@ -74,6 +74,11 @@ class ExportGpsController extends Controller
             abort(404, 'Carte non générée. Demandez à un administrateur de la régénérer.');
         }
 
-        return response()->download(Storage::disk('public')->path($relativePath), "carte_{$slug}.png");
+        $fullPath = Storage::disk('public')->path($relativePath);
+
+        return response()->download($fullPath, "carte_{$slug}.png", [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'ETag' => md5_file($fullPath),
+        ]);
     }
 }
