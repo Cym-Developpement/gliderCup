@@ -165,49 +165,30 @@ class MapGeneratorService
 
     private static function generateMarkerPng(int $numero): string
     {
-        $svg = file_get_contents(public_path('img/path1.svg'));
-        $svg = str_replace('#PP', (string) $numero, $svg);
-
-        $tmpSvg = sys_get_temp_dir() . '/marker_' . $numero . '.svg';
+        $basePath = public_path('img/marker-base.png');
         $tmpPng = sys_get_temp_dir() . '/marker_' . $numero . '.png';
-        file_put_contents($tmpSvg, $svg);
 
-        if (shell_exec('which rsvg-convert 2>/dev/null')) {
-            shell_exec("rsvg-convert -w 105 -h 90 {$tmpSvg} -o {$tmpPng}");
-        } elseif (extension_loaded('imagick')) {
-            $im = new \Imagick();
-            $im->setResolution(72, 72);
-            $im->readImage($tmpSvg);
-            $im->setImageFormat('png');
-            $im->resizeImage(105, 90, \Imagick::FILTER_LANCZOS, 1);
-            $im->writeImage($tmpPng);
-            $im->destroy();
-        } else {
-            // Fallback GD : cercle blanc avec numéro sur fond transparent
-            $w = 105;
-            $h = 90;
-            $img = imagecreatetruecolor($w, $h);
-            imagealphablending($img, false);
-            imagesavealpha($img, true);
-            $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
-            imagefill($img, 0, 0, $transparent);
-            imagealphablending($img, true);
-            $white = imagecolorallocate($img, 255, 255, 255);
-            $black = imagecolorallocate($img, 0, 0, 0);
-            $blue = imagecolorallocate($img, 37, 99, 235);
-            imagefilledellipse($img, $w / 2, $h / 2 - 5, 50, 50, $white);
-            imageellipse($img, $w / 2, $h / 2 - 5, 50, 50, $blue);
-            $font = 5;
-            $text = (string) $numero;
-            $tw = strlen($text) * imagefontwidth($font);
-            $th = imagefontheight($font);
-            imagestring($img, $font, ($w - $tw) / 2, ($h - $th) / 2 - 5, $text, $black);
-            imagealphablending($img, false);
-            imagepng($img, $tmpPng);
-            imagedestroy($img);
-        }
+        $img = imagecreatefrompng($basePath);
+        imagealphablending($img, true);
+        imagesavealpha($img, true);
 
-        @unlink($tmpSvg);
+        $w = imagesx($img);
+        $h = imagesy($img);
+
+        $black = imagecolorallocate($img, 0, 0, 0);
+        $text = (string) $numero;
+        $fontPath = __DIR__ . '/../../vendor/ycdev/php-osm-static-aero/src/resources/SpaceMono-Bold.ttf';
+        $fontSize = 28;
+        $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
+        $tw = abs($bbox[2] - $bbox[0]);
+        $th = abs($bbox[7] - $bbox[1]);
+        $cx = ($w / 2) - ($tw / 2);
+        $cy = ($h * 0.22) + ($th / 2);
+        imagettftext($img, $fontSize, 0, (int) $cx, (int) $cy, $black, $fontPath, $text);
+
+        imagealphablending($img, false);
+        imagepng($img, $tmpPng);
+        imagedestroy($img);
 
         return $tmpPng;
     }
