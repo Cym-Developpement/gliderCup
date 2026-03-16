@@ -19,6 +19,8 @@ class MapGeneratorService
 {
     public static function generate(): string
     {
+        ini_set('memory_limit', '1G');
+
         $competition = Competition::active();
         if (!$competition) {
             throw new \RuntimeException('Aucune compétition active.');
