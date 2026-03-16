@@ -187,7 +187,7 @@
                                 <td class="px-4 py-2 border-b">
                                     {{ $inscription->planeurs->count() }}
                                 </td>
-                                <td class="px-4 py-2 border-b text-right font-semibold">
+                                <td class="px-4 py-2 border-b text-right font-semibold {{ $inscription->montant_custom !== null ? 'text-blue-600' : '' }}">
                                     @php
                                         $montantPlaneur = 50;
                                         $montantAdhesion = 50;
@@ -195,9 +195,6 @@
                                         $prixTotal = $inscription->montant_custom !== null ? $inscription->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
                                     @endphp
                                     {{ number_format($prixTotal, 2, ',', ' ') }} €
-                                    @if($inscription->montant_custom !== null)
-                                        <span class="text-xs text-blue-600" title="Montant personnalisé">*</span>
-                                    @endif
                                 </td>
                                 <td class="px-4 py-2 border-b relative" style="overflow: visible;">
                                     <div class="relative inline-block text-left">
@@ -321,7 +318,15 @@
 
             <!-- Table des paiements HelloAsso -->
             <div class="mt-8">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Paiements HelloAsso</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Paiements HelloAsso</h2>
+                    <button onclick="verifierPaiements()" id="btnVerifierPaiements" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span id="btnVerifierPaiementsText">Vérifier les paiements</span>
+                    </button>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white border border-gray-300">
                         <thead class="bg-gray-100">
@@ -354,7 +359,7 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-2 border-b">{{ $paiement->created_at->format('d/m/Y H:i') }}</td>
-                                    <td class="px-4 py-2 border-b text-right font-semibold">
+                                    <td class="px-4 py-2 border-b text-right font-semibold {{ $paiement->montant_custom !== null ? 'text-blue-600' : '' }}">
                                         @php
                                             $montantPlaneur = 50;
                                             $montantAdhesion = 50;
@@ -362,9 +367,6 @@
                                             $prixTotal = $paiement->montant_custom !== null ? $paiement->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
                                         @endphp
                                         {{ number_format($prixTotal, 2, ',', ' ') }} €
-                                        @if($paiement->montant_custom !== null)
-                                            <span class="text-xs text-blue-600" title="Montant personnalisé">*</span>
-                                        @endif
                                     </td>
                                     <td class="px-4 py-2 border-b">
                                         @if($paiement->paiement_valide)
@@ -562,6 +564,38 @@
     </style>
 
     <script>
+        // Vérifier tous les paiements HelloAsso
+        async function verifierPaiements() {
+            const btn = document.getElementById('btnVerifierPaiements');
+            const btnText = document.getElementById('btnVerifierPaiementsText');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btnText.textContent = 'Vérification en cours...';
+
+            try {
+                const response = await fetch('{{ route("paiement.verifier-tous") }}');
+                const data = await response.json();
+
+                if (data.success) {
+                    btnText.textContent = `${data.resultats.valides} validé(s), ${data.resultats.en_attente} en attente`;
+                    if (data.resultats.valides > 0) {
+                        // Recharger la page pour mettre à jour les statuts
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                } else {
+                    btnText.textContent = 'Erreur lors de la vérification';
+                }
+            } catch (e) {
+                btnText.textContent = 'Erreur réseau';
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnText.textContent = 'Vérifier les paiements';
+                }, 5000);
+            }
+        }
+
         // Récupérer le token CSRF
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
 
