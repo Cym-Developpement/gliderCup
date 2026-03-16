@@ -46,14 +46,31 @@ class MapGeneratorService
                 ->setRadius(1000)
         );
 
-        $markers = new Markers(public_path('img/marker-base.png'));
+        $baseMarkerPath = public_path('img/marker-base.png');
+        $baseImg = imagecreatefrompng($baseMarkerPath);
+        $origW = imagesx($baseImg);
+        $origH = imagesy($baseImg);
+        $newW = (int) ($origW / 1.5);
+        $newH = (int) ($origH / 1.5);
+        $resized = imagecreatetruecolor($newW, $newH);
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
+        imagefill($resized, 0, 0, $transparent);
+        imagecopyresampled($resized, $baseImg, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+        $tmpBase = sys_get_temp_dir() . '/marker_base_small.png';
+        imagepng($resized, $tmpBase);
+        imagedestroy($baseImg);
+        imagedestroy($resized);
+
+        $markers = new Markers($tmpBase);
         $markers->setAnchor(Markers::ANCHOR_CENTER, Markers::ANCHOR_BOTTOM);
         $markers->addMarker($center);
         $map->draw()->addMarkers($markers);
 
         $points = PointVirage::where('competition_id', $competition->id)->get();
 
-        $tempMarkers = [];
+        $tempMarkers = [$tmpBase];
         foreach ($points as $index => $point) {
             $pos = new LatLng($point->latitude, $point->longitude);
             $markerPath = self::generateMarkerPng($index + 1);
@@ -136,7 +153,7 @@ class MapGeneratorService
 
         $titre = $competition->nom;
         $map->draw()->addDraw(
-            new Legend(Legend::ALIGN_RIGHT, $legendText, 25, '000000', 'ffffff', 32, null, $titre)
+            new Legend(Legend::ALIGN_RIGHT, $legendText, 25, '000000', 'ffffff', 32, public_path('img/logo.png'), $titre)
         );
 
         $slug = Str::slug($competition->nom);
