@@ -2089,6 +2089,7 @@
             const iconSuccess = document.getElementById('generation-carte-success');
             const iconError = document.getElementById('generation-carte-error');
             const downloadLink = document.getElementById('generation-carte-download');
+            const preview = document.getElementById('generation-carte-preview');
 
             // Afficher la modal en mode loading
             modal.classList.remove('hidden');
@@ -2099,6 +2100,7 @@
             iconSuccess.classList.add('hidden');
             iconError.classList.add('hidden');
             downloadLink.classList.add('hidden');
+            preview.classList.add('hidden');
 
             try {
                 const response = await fetch('{{ route("admin.carte.regenerer") }}', {
@@ -2115,6 +2117,8 @@
                     statusText.textContent = 'Carte générée avec succès !';
                     subtitle.classList.add('hidden');
                     downloadLink.classList.remove('hidden');
+                    preview.src = '/storage/' + data.path + '?t=' + Date.now();
+                    preview.classList.remove('hidden');
                 } else {
                     iconError.classList.remove('hidden');
                     statusText.textContent = 'Erreur : ' + (data.message || 'Erreur inconnue');
@@ -3118,7 +3122,7 @@
 
     <!-- Modal génération carte -->
     <div id="modalGenerationCarte" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-2xl font-bold text-gray-900">Génération de la carte</h3>
@@ -3148,6 +3152,7 @@
                     </div>
                     <p id="generation-carte-status" class="text-gray-700 text-lg font-medium mb-2">Génération en cours...</p>
                     <p id="generation-carte-subtitle" class="text-gray-500 text-sm mb-4">Cette opération peut prendre quelques minutes.</p>
+                    <img id="generation-carte-preview" class="hidden max-w-full rounded shadow border mt-4" alt="Carte générée">
                 </div>
 
                 <div class="flex justify-end gap-3 border-t pt-4">
