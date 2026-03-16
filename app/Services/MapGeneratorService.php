@@ -151,9 +151,23 @@ class MapGeneratorService
         $legendText .= "\n>>Du " . $competition->date_debut->format('d/m/Y') . " au " . $competition->date_fin->format('d/m/Y') . "\n";
         $legendText .= "\n>>wassmercup.fr\n";
 
+        $logoSrc = imagecreatefrompng(public_path('img/logo.png'));
+        $logoW = imagesx($logoSrc) * 2;
+        $logoH = imagesy($logoSrc) * 2;
+        $logoBig = imagecreatetruecolor($logoW, $logoH);
+        imagealphablending($logoBig, false);
+        imagesavealpha($logoBig, true);
+        imagefill($logoBig, 0, 0, imagecolorallocatealpha($logoBig, 0, 0, 0, 127));
+        imagecopyresampled($logoBig, $logoSrc, 0, 0, 0, 0, $logoW, $logoH, imagesx($logoSrc), imagesy($logoSrc));
+        $tmpLogo = sys_get_temp_dir() . '/logo_2x.png';
+        imagepng($logoBig, $tmpLogo);
+        imagedestroy($logoSrc);
+        imagedestroy($logoBig);
+        $tempMarkers[] = $tmpLogo;
+
         $titre = $competition->nom;
         $map->draw()->addDraw(
-            new Legend(Legend::ALIGN_RIGHT, $legendText, 25, '000000', 'ffffff', 32, public_path('img/logo.png'), $titre)
+            new Legend(Legend::ALIGN_RIGHT, $legendText, 25, '000000', 'ffffff', 32, $tmpLogo, $titre)
         );
 
         $slug = Str::slug($competition->nom);
