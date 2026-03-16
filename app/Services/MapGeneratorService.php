@@ -37,7 +37,7 @@ class MapGeneratorService
         $map = new PaperMap(
             PaperSize::landscape(PaperSize::A3),
             $center,
-            ['zoom' => 11, 'factor' => 2.0, 'bordure' => 5],
+            ['zoom' => 12, 'factor' => 2.0, 'bordure' => 5],
             [TileLayer::OSMFR, TileLayer::OPENAIP]
         );
 
@@ -129,7 +129,7 @@ class MapGeneratorService
         $legendText .= "\n>>Du " . $competition->date_debut->format('d/m/Y') . " au " . $competition->date_fin->format('d/m/Y') . "\n";
         $legendText .= "\n>>wassmercup.fr\n";
 
-        $logoSrc = imagecreatefrompng(public_path('img/logo.png'));
+        $logoSrc = imagecreatefrompng(public_path('img/logo-legend.png'));
         $logoW = (int) (imagesx($logoSrc) * 2.4);
         $logoH = (int) (imagesy($logoSrc) * 2.4);
         $logoBig = imagecreatetruecolor($logoW, $logoH);
@@ -176,9 +176,9 @@ class MapGeneratorService
         $h = imagesy($img);
 
         $black = imagecolorallocate($img, 0, 0, 0);
-        $text = (string) $numero;
+        $text = '#' . $numero;
         $fontPath = __DIR__ . '/../../vendor/ycdev/php-osm-static-aero/src/resources/SpaceMono-Bold.ttf';
-        $fontSize = 28;
+        $fontSize = 56;
         $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
         $tw = abs($bbox[2] - $bbox[0]);
         $th = abs($bbox[7] - $bbox[1]);
@@ -186,8 +186,8 @@ class MapGeneratorService
         $cy = ($h * 0.22) + ($th / 2);
         imagettftext($img, $fontSize, 0, (int) $cx, (int) $cy, $black, $fontPath, $text);
 
-        $newW = (int) ($w / 3);
-        $newH = (int) ($h / 3);
+        $newW = (int) ($w / 3 * 0.7);
+        $newH = (int) ($h / 3 * 0.7);
         $resized = imagecreatetruecolor($newW, $newH);
         imagealphablending($resized, false);
         imagesavealpha($resized, true);
