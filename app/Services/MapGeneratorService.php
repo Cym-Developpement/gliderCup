@@ -37,7 +37,7 @@ class MapGeneratorService
         $center = new LatLng($centerLat, $centerLng);
 
         $map = new PaperMap(
-            PaperSize::landscape(PaperSize::A2),
+            PaperSize::landscape(PaperSize::A3),
             $center,
             ['zoom' => 12, 'factor' => 2.0, 'bordure' => 5],
             [TileLayer::OSMFR, TileLayer::OPENAIP]
