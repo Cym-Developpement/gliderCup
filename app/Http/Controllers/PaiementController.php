@@ -747,9 +747,18 @@ class PaiementController extends Controller
                 if ($hasOrder) {
                     // Chercher le pilote par checkoutIntentId
                     $pilote = Pilote::where('helloasso_checkout_intent_id', $checkoutIntentId)->first();
-                    
+
                     if ($pilote) {
                         $piloteId = $pilote->id;
+                        // Mettre à jour le statut de paiement en base si pas encore validé
+                        if (!$pilote->paiement_valide) {
+                            $pilote->paiement_valide = true;
+                            $pilote->save();
+                            \Log::info("Paiement validé automatiquement pour le pilote {$pilote->id} via checkPaiement", [
+                                'checkoutIntentId' => $checkoutIntentId,
+                                'orderId' => $orderId,
+                            ]);
+                        }
                     } else {
                         \Log::warning("Pilote non trouvé pour checkoutIntentId: {$checkoutIntentId}");
                     }

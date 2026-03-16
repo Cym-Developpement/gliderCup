@@ -19,7 +19,7 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-white to-sky-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <div class="container mx-auto px-4 py-8 max-w-[95vw]">
         <div class="bg-white rounded-lg shadow-lg p-8">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-3xl font-bold text-gray-900">Administration - Wassmer Cup</h1>
@@ -189,7 +189,7 @@
                                 </td>
                                 <td class="px-4 py-2 border-b text-right font-semibold">
                                     @php
-                                        $montantPlaneur = 100;
+                                        $montantPlaneur = 50;
                                         $montantAdhesion = 50;
                                         $nombrePlaneurs = $inscription->planeurs->count();
                                         $prixTotal = $inscription->montant_custom !== null ? $inscription->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
@@ -294,7 +294,7 @@
                                 <td colspan="7" class="px-4 py-3 border-t-2 border-gray-400 text-right">Total :</td>
                                 <td class="px-4 py-3 border-t-2 border-gray-400 text-right">
                                     @php
-                                        $montantPlaneur = 100;
+                                        $montantPlaneur = 50;
                                         $montantAdhesion = 50;
                                         $totalGeneral = 0;
                                         foreach($inscriptions as $inscription) {
@@ -328,7 +328,6 @@
                             <tr>
                                 <th class="px-4 py-2 border-b text-left">Nom</th>
                                 <th class="px-4 py-2 border-b text-left">Prénom</th>
-                                <th class="px-4 py-2 border-b text-left">Email</th>
                                 <th class="px-4 py-2 border-b text-left">Checkout Intent ID</th>
                                 <th class="px-4 py-2 border-b text-left">Date de création</th>
                                 <th class="px-4 py-2 border-b text-left">Montant</th>
@@ -338,9 +337,12 @@
                         <tbody>
                             @forelse($paiementsHelloAsso as $paiement)
                                 <tr id="paiement-row-{{ $paiement->id }}" data-checkout-id="{{ trim($paiement->helloasso_checkout_intent_id ?? '') }}">
-                                    <td class="px-4 py-2 border-b">{{ $paiement->nom }}</td>
-                                    <td class="px-4 py-2 border-b">{{ $paiement->prenom }}</td>
-                                    <td class="px-4 py-2 border-b">{{ $paiement->email }}</td>
+                                    <td class="px-4 py-2 border-b">
+                                        <button onclick="voirDetails({{ $paiement->id }})" class="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">{{ $paiement->nom }}</button>
+                                    </td>
+                                    <td class="px-4 py-2 border-b">
+                                        <button onclick="voirDetails({{ $paiement->id }})" class="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">{{ $paiement->prenom }}</button>
+                                    </td>
                                     <td class="px-4 py-2 border-b">
                                         @php
                                             $checkoutId = trim($paiement->helloasso_checkout_intent_id ?? '');
@@ -354,7 +356,7 @@
                                     <td class="px-4 py-2 border-b">{{ $paiement->created_at->format('d/m/Y H:i') }}</td>
                                     <td class="px-4 py-2 border-b text-right font-semibold">
                                         @php
-                                            $montantPlaneur = 100;
+                                            $montantPlaneur = 50;
                                             $montantAdhesion = 50;
                                             $nombrePlaneurs = $paiement->planeurs->count();
                                             $prixTotal = $paiement->montant_custom !== null ? $paiement->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
@@ -689,7 +691,7 @@
                                                 Enregistrer
                                             </button>
                                         </form>
-                                        <p class="text-xs text-gray-500 mt-1">Si vide, le calcul standard s'applique (nb planeurs × 100 € + 50 € adhésion).</p>
+                                        <p class="text-xs text-gray-500 mt-1">Si vide, le calcul standard s'applique (nb planeurs × 50 € + 50 € adhésion).</p>
                                     </div>
                                     ` : (pilote.montant_custom !== null ? `
                                     <div>
@@ -2688,7 +2690,7 @@
                         }
                     } else if (statut === 'en_attente') {
                         badgeClass = 'bg-yellow-100 text-yellow-800';
-                        badgeText = '⏳ En attente';
+                        badgeText = 'En attente';
                         icon = '⏳';
                     } else if (statut === 'erreur') {
                         badgeClass = 'bg-red-100 text-red-800';
