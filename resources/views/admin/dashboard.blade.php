@@ -2117,7 +2117,7 @@
                     statusText.textContent = 'Carte générée avec succès !';
                     subtitle.classList.add('hidden');
                     downloadLink.classList.remove('hidden');
-                    preview.src = '/storage/' + data.path + '?t=' + Date.now();
+                    preview.src = '{{ route("export.carte") }}?t=' + Date.now();
                     preview.classList.remove('hidden');
                 } else {
                     iconError.classList.remove('hidden');
