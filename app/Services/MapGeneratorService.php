@@ -131,8 +131,8 @@ class MapGeneratorService
             $legendText .= '## #' . ($index + 1) . ' ' . $point->nom . "\n";
         }
 
-        $legendText .= "\nDu " . $competition->date_debut->format('d/m/Y') . " au " . $competition->date_fin->format('d/m/Y') . "\n";
-        $legendText .= "\nwassmercup.fr\n";
+        $legendText .= "\n>>Du " . $competition->date_debut->format('d/m/Y') . " au " . $competition->date_fin->format('d/m/Y') . "\n";
+        $legendText .= "\n>>wassmercup.fr\n";
 
         $titre = $competition->nom;
         $map->draw()->addDraw(
@@ -165,23 +165,25 @@ class MapGeneratorService
 
         // Tenter rsvg-convert, sinon Imagick, sinon fallback GD
         if (shell_exec('which rsvg-convert 2>/dev/null')) {
-            shell_exec("rsvg-convert -w 70 -h 60 {$tmpSvg} -o {$tmpPng}");
+            shell_exec("rsvg-convert -w 105 -h 90 {$tmpSvg} -o {$tmpPng}");
         } elseif (extension_loaded('imagick')) {
             $im = new \Imagick();
             $im->setResolution(72, 72);
             $im->readImage($tmpSvg);
             $im->setImageFormat('png');
-            $im->resizeImage(70, 60, \Imagick::FILTER_LANCZOS, 1);
+            $im->resizeImage(105, 90, \Imagick::FILTER_LANCZOS, 1);
             $im->writeImage($tmpPng);
             $im->destroy();
         } else {
-            // Fallback GD : cercle blanc avec numéro
-            $w = 70;
-            $h = 60;
+            // Fallback GD : cercle blanc avec numéro sur fond transparent
+            $w = 105;
+            $h = 90;
             $img = imagecreatetruecolor($w, $h);
+            imagealphablending($img, false);
             imagesavealpha($img, true);
             $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
             imagefill($img, 0, 0, $transparent);
+            imagealphablending($img, true);
             $white = imagecolorallocate($img, 255, 255, 255);
             $black = imagecolorallocate($img, 0, 0, 0);
             $blue = imagecolorallocate($img, 37, 99, 235);
@@ -192,6 +194,7 @@ class MapGeneratorService
             $tw = strlen($text) * imagefontwidth($font);
             $th = imagefontheight($font);
             imagestring($img, $font, ($w - $tw) / 2, ($h - $th) / 2 - 5, $text, $black);
+            imagealphablending($img, false);
             imagepng($img, $tmpPng);
             imagedestroy($img);
         }
