@@ -53,9 +53,15 @@ class MapGeneratorService
 
         $points = PointVirage::where('competition_id', $competition->id)->get();
 
-        foreach ($points as $point) {
+        $tempMarkers = [];
+        foreach ($points as $index => $point) {
             $pos = new LatLng($point->latitude, $point->longitude);
-            $map->draw()->addDraw(new Text($pos, $point->nom, 30, '000000'));
+            $markerPath = self::generateMarkerPng($index + 1);
+            $tempMarkers[] = $markerPath;
+            $ptMarkers = new Markers($markerPath);
+            $ptMarkers->setAnchor(Markers::ANCHOR_CENTER, Markers::ANCHOR_BOTTOM);
+            $ptMarkers->addMarker($pos);
+            $map->draw()->addMarkers($ptMarkers);
         }
 
         $compositionLabels = [
@@ -125,6 +131,9 @@ class MapGeneratorService
             $legendText .= '## #' . ($index + 1) . ' ' . $point->nom . "\n";
         }
 
+        $legendText .= "\nDu " . $competition->date_debut->format('d/m/Y') . " au " . $competition->date_fin->format('d/m/Y') . "\n";
+        $legendText .= "\nwassmercup.fr\n";
+
         $titre = $competition->nom;
         $map->draw()->addDraw(
             new Legend(Legend::ALIGN_RIGHT, $legendText, 25, '000000', 'ffffff', 32, null, $titre)
@@ -138,6 +147,57 @@ class MapGeneratorService
         $fullPath = Storage::disk('public')->path($relativePath);
         $map->saveImage($fullPath);
 
+        foreach ($tempMarkers as $tmp) {
+            @unlink($tmp);
+        }
+
         return $relativePath;
+    }
+
+    private static function generateMarkerPng(int $numero): string
+    {
+        $svg = file_get_contents(public_path('img/path1.svg'));
+        $svg = str_replace('#PP', (string) $numero, $svg);
+
+        $tmpSvg = sys_get_temp_dir() . '/marker_' . $numero . '.svg';
+        $tmpPng = sys_get_temp_dir() . '/marker_' . $numero . '.png';
+        file_put_contents($tmpSvg, $svg);
+
+        // Tenter rsvg-convert, sinon Imagick, sinon fallback GD
+        if (shell_exec('which rsvg-convert 2>/dev/null')) {
+            shell_exec("rsvg-convert -w 70 -h 60 {$tmpSvg} -o {$tmpPng}");
+        } elseif (extension_loaded('imagick')) {
+            $im = new \Imagick();
+            $im->setResolution(72, 72);
+            $im->readImage($tmpSvg);
+            $im->setImageFormat('png');
+            $im->resizeImage(70, 60, \Imagick::FILTER_LANCZOS, 1);
+            $im->writeImage($tmpPng);
+            $im->destroy();
+        } else {
+            // Fallback GD : cercle blanc avec numéro
+            $w = 70;
+            $h = 60;
+            $img = imagecreatetruecolor($w, $h);
+            imagesavealpha($img, true);
+            $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
+            imagefill($img, 0, 0, $transparent);
+            $white = imagecolorallocate($img, 255, 255, 255);
+            $black = imagecolorallocate($img, 0, 0, 0);
+            $blue = imagecolorallocate($img, 37, 99, 235);
+            imagefilledellipse($img, $w / 2, $h / 2 - 5, 50, 50, $white);
+            imageellipse($img, $w / 2, $h / 2 - 5, 50, 50, $blue);
+            $font = 5;
+            $text = (string) $numero;
+            $tw = strlen($text) * imagefontwidth($font);
+            $th = imagefontheight($font);
+            imagestring($img, $font, ($w - $tw) / 2, ($h - $th) / 2 - 5, $text, $black);
+            imagepng($img, $tmpPng);
+            imagedestroy($img);
+        }
+
+        @unlink($tmpSvg);
+
+        return $tmpPng;
     }
 }
