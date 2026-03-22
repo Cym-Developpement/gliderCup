@@ -154,8 +154,8 @@
 
         <!-- Description de l'événement -->
         <section class="bg-white rounded-lg shadow-lg mb-12 relative overflow-hidden">
-            <!-- Ruban avec compteur de planeurs (affiché uniquement à partir de 5 planeurs) -->
-            @if(($nombrePlaneursInscrits ?? 0) >= 5)
+            <!-- Ruban avec compteur de planeurs (affiché uniquement à partir de 10 planeurs) -->
+            @if(($nombrePlaneursInscrits ?? 0) >= 10)
             <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center py-3 px-6">
                 <p class="text-lg font-bold">
                     <span class="text-2xl">{{ $nombrePlaneursInscrits ?? 0 }}</span> / {{ $limitePlaneurs ?? 15 }} planeurs inscrits
@@ -239,6 +239,35 @@
                             </div>
                         </li>
                     </ul>
+                </div>
+
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-6 my-6 rounded">
+                    <h3 class="text-xl font-semibold text-blue-900 mb-4">Programme</h3>
+                    <ul class="list-none space-y-3 text-blue-800">
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2 whitespace-nowrap">Sam. 25 & Dim. 26 juillet :</span>
+                            <span>Accueil des participants — installation, reconnaissance du site. Un repas convivial est organisé le dimanche soir.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2 whitespace-nowrap">Lun. 27 & Mar. 28 juillet :</span>
+                            <span>Épreuves de compétition</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2 whitespace-nowrap">Mer. 29 juillet :</span>
+                            <span>Journée de pause — vol libre</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2 whitespace-nowrap">Jeu. 30 & Ven. 31 juillet :</span>
+                            <span>Épreuves de compétition. Repas de clôture le vendredi soir.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2 whitespace-nowrap">Sam. 1er août :</span>
+                            <span>Départ</span>
+                        </li>
+                    </ul>
+                    <p class="mt-4 text-blue-700 text-sm italic">
+                        Un camping est disponible sur place — les participants sont libres de rester aussi longtemps qu'ils le souhaitent.
+                    </p>
                 </div>
 
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-6 my-6 rounded">
