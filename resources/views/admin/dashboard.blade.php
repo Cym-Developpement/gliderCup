@@ -528,7 +528,7 @@
                             <tr>
                                 <th class="px-4 py-2 border-b text-left">Intitulé</th>
                                 <th class="px-4 py-2 border-b text-left">Personne</th>
-                                <th class="px-4 py-2 border-b text-left w-40">Statut</th>
+                                <th class="px-4 py-2 border-b text-left w-48">Statut</th>
                                 <th class="px-4 py-2 border-b text-left">Actions</th>
                             </tr>
                         </thead>
@@ -2922,6 +2922,13 @@
 
         function renderTaches(taches) {
             const tbody = document.getElementById('tachesBody');
+            // Sauvegarder les commentaires ouverts avant le re-render
+            const openCommentaires = Object.keys(commentairesCharges).filter(id => {
+                const row = document.getElementById(`commentaires-row-${id}`);
+                return row && !row.classList.contains('hidden');
+            });
+            // Reset le cache pour forcer le rechargement
+            Object.keys(commentairesCharges).forEach(k => delete commentairesCharges[k]);
             if (taches.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500">Aucune tâche</td></tr>';
                 return;
@@ -2944,7 +2951,7 @@
                         <span class="editable-cell cursor-pointer hover:bg-blue-50 px-1 rounded" onclick="editCell(this, ${t.id}, 'personne')">${escapeHtml(t.personne || '')}&nbsp;</span>
                     </td>
                     <td class="px-4 py-2 border-b w-32">
-                        <button onclick="cyclerStatut(${t.id}, '${t.statut}')" class="px-2 py-1 rounded-full text-xs font-semibold cursor-pointer ${statutColors[t.statut] || 'bg-gray-100 text-gray-800'}">
+                        <button onclick="cyclerStatut(${t.id}, '${t.statut}')" class="px-2 py-1 rounded-full text-xs font-semibold cursor-pointer whitespace-nowrap ${statutColors[t.statut] || 'bg-gray-100 text-gray-800'}">
                             ${escapeHtml(t.statut)}
                         </button>
                     </td>
@@ -2968,6 +2975,8 @@
                     </td>
                 </tr>
             `).join('');
+            // Rouvrir les commentaires qui étaient ouverts
+            openCommentaires.forEach(id => toggleCommentaires(parseInt(id)));
         }
 
         function escapeHtml(text) {
