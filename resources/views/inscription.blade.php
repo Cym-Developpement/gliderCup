@@ -275,12 +275,8 @@
                     <p class="text-blue-800 mb-3">Un camping est disponible sur place, directement sur le terrain.</p>
                     <ul class="list-none space-y-3 text-blue-800">
                         <li class="flex items-start">
-                            <span class="font-semibold mr-2">Emplacement tente :</span>
-                            <span>5 € / jour</span>
-                        </li>
-                        <li class="flex items-start">
                             <span class="font-semibold mr-2">Emplacement tente avec électricité :</span>
-                            <span>7 € / jour</span>
+                            <span>5 € / jour</span>
                         </li>
                         <li class="flex items-start">
                             <span class="font-semibold mr-2">Caravane avec électricité :</span>
