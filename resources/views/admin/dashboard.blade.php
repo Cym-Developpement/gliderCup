@@ -528,7 +528,7 @@
                             <tr>
                                 <th class="px-4 py-2 border-b text-left">Intitulé</th>
                                 <th class="px-4 py-2 border-b text-left">Personne</th>
-                                <th class="px-4 py-2 border-b text-left w-32">Statut</th>
+                                <th class="px-4 py-2 border-b text-left w-40">Statut</th>
                                 <th class="px-4 py-2 border-b text-left">Actions</th>
                             </tr>
                         </thead>
@@ -2931,10 +2931,11 @@
                     <td class="px-4 py-2 border-b">
                         <div class="flex items-center gap-2">
                             <button onclick="toggleCommentaires(${t.id})" class="relative text-gray-400 hover:text-blue-600 shrink-0" title="Commentaires">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                                </svg>
-                                ${t.commentaires_count > 0 ? `<span class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">${t.commentaires_count}</span>` : ''}
+                                ${t.commentaires_count > 0
+                                    ? `<span class="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">${t.commentaires_count}</span>`
+                                    : `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                    </svg>`}
                             </button>
                             <span class="editable-cell cursor-pointer hover:bg-blue-50 px-1 rounded" onclick="editCell(this, ${t.id}, 'intitule')">${escapeHtml(t.intitule)}</span>
                         </div>
