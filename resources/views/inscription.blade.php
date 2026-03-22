@@ -271,6 +271,33 @@
                 </div>
 
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-6 my-6 rounded">
+                    <h3 class="text-xl font-semibold text-blue-900 mb-4">Hébergement</h3>
+                    <p class="text-blue-800 mb-3">Un camping est disponible sur place, directement sur le terrain.</p>
+                    <ul class="list-none space-y-3 text-blue-800">
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2">Emplacement tente :</span>
+                            <span>5 € / jour</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2">Emplacement tente avec électricité :</span>
+                            <span>7 € / jour</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2">Caravane avec électricité :</span>
+                            <span>7 € / jour</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2">Chambres d'hôtes à Oiron :</span>
+                            <span><a href="https://www.chambres-hotes.fr/chambres-hotes_oiron_34319.html?ctx=rnIOH9TvAg" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline">Voir les disponibilités</a></span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="font-semibold mr-2">Chambres d'hôtes à Thouars :</span>
+                            <span><a href="https://www.chambres-hotes.fr/chambres-hotes_thouars_34330.html?ctx=rnIOH9TvAg" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline">Voir les disponibilités</a></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-6 my-6 rounded">
                     <h3 class="text-xl font-semibold text-blue-900 mb-4">Points de virage</h3>
                     <p class="text-blue-800">
                         Les points de virage seront bientôt disponibles (dans quelques semaines). Une carte sera mise à disposition avec les points de virage pour la compétition.
