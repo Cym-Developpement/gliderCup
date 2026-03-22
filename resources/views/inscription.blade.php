@@ -360,8 +360,9 @@
                 <!-- Étape 1 : Informations de base du pilote -->
                 <div id="etape_1" class="etape-formulaire">
                     <div class="border-b border-gray-200 pb-6">
-                        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Informations du pilote</h3>
-                        
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-2">Informations du pilote</h3>
+                        <p class="text-sm text-gray-500 mb-4">L'inscription de votre planeur se fait à l'étape suivante.</p>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
