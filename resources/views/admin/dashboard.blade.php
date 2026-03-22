@@ -2939,10 +2939,27 @@
                             ${escapeHtml(t.statut)}
                         </button>
                     </td>
-                    <td class="px-4 py-2 border-b">
+                    <td class="px-4 py-2 border-b flex items-center gap-2">
+                        <button onclick="toggleCommentaires(${t.id})" class="relative text-gray-500 hover:text-blue-600" title="Commentaires">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                            ${t.commentaires_count > 0 ? `<span class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">${t.commentaires_count}</span>` : ''}
+                        </button>
                         <button onclick="supprimerTache(${t.id})" class="text-red-600 hover:text-red-800 text-sm font-medium">
                             Supprimer
                         </button>
+                    </td>
+                </tr>
+                <tr id="commentaires-row-${t.id}" class="hidden">
+                    <td colspan="4" class="px-4 py-3 bg-gray-50 border-b">
+                        <div id="commentaires-container-${t.id}">
+                            <p class="text-gray-400 text-sm">Chargement...</p>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <input type="text" id="commentaire-input-${t.id}" placeholder="Ajouter un commentaire..." class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onkeydown="if(event.key==='Enter')ajouterCommentaire(${t.id})">
+                            <button onclick="ajouterCommentaire(${t.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Ajouter</button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -3055,6 +3072,81 @@
         document.getElementById('newTachePersonne').addEventListener('keydown', e => {
             if (e.key === 'Enter') ajouterTache();
         });
+
+        const commentairesCharges = {};
+
+        function toggleCommentaires(id) {
+            const row = document.getElementById(`commentaires-row-${id}`);
+            if (row.classList.contains('hidden')) {
+                row.classList.remove('hidden');
+                if (!commentairesCharges[id]) {
+                    chargerCommentaires(id);
+                }
+            } else {
+                row.classList.add('hidden');
+            }
+        }
+
+        function chargerCommentaires(id) {
+            fetch(`/admin/taches/${id}/commentaires`)
+                .then(r => r.json())
+                .then(commentaires => {
+                    commentairesCharges[id] = true;
+                    const container = document.getElementById(`commentaires-container-${id}`);
+                    if (commentaires.length === 0) {
+                        container.innerHTML = '<p class="text-gray-400 text-sm italic">Aucun commentaire</p>';
+                        return;
+                    }
+                    container.innerHTML = commentaires.map(c => `
+                        <div class="flex justify-between items-start py-1 border-b border-gray-200 last:border-0">
+                            <div>
+                                <span class="text-xs text-gray-400">${new Date(c.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                <span class="text-sm ml-2">${escapeHtml(c.contenu)}</span>
+                            </div>
+                            <button onclick="supprimerCommentaire(${c.id}, ${id})" class="text-red-400 hover:text-red-600 text-xs ml-2 shrink-0">Suppr.</button>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function ajouterCommentaire(id) {
+            const input = document.getElementById(`commentaire-input-${id}`);
+            const contenu = input.value.trim();
+            if (!contenu) return;
+
+            fetch(`/admin/taches/${id}/commentaires`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ contenu }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    input.value = '';
+                    chargerCommentaires(id);
+                    chargerTaches();
+                }
+            });
+        }
+
+        function supprimerCommentaire(commentaireId, tacheId) {
+            fetch(`/admin/commentaires-taches/${commentaireId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    chargerCommentaires(tacheId);
+                    chargerTaches();
+                }
+            });
+        }
 
         // Charger les tâches au chargement
         chargerTaches();

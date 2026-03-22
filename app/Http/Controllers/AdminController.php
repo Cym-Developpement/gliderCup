@@ -21,6 +21,7 @@ use App\Models\Message;
 use App\Models\MessageGroupe;
 use App\Models\PointVirage;
 use App\Models\Tache;
+use App\Models\CommentaireTache;
 use App\Services\MapGeneratorService;
 use App\Services\OpenAipService;
 use App\Models\User;
@@ -1114,6 +1115,7 @@ class AdminController extends Controller
         }
 
         $taches = Tache::where('competition_id', $competition->id)
+            ->withCount('commentaires')
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -1164,6 +1166,44 @@ class AdminController extends Controller
 
         $tache = Tache::where('competition_id', $competition->id)->findOrFail($id);
         $tache->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Retourne les commentaires d'une tâche en JSON
+     */
+    public function getCommentairesTache($id)
+    {
+        $commentaires = CommentaireTache::where('tache_id', $id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return response()->json($commentaires);
+    }
+
+    /**
+     * Crée un commentaire sur une tâche
+     */
+    public function saveCommentaireTache(Request $request, $id)
+    {
+        $request->validate(['contenu' => 'required|string']);
+
+        $commentaire = CommentaireTache::create([
+            'tache_id' => $id,
+            'contenu' => $request->contenu,
+        ]);
+
+        return response()->json(['success' => true, 'commentaire' => $commentaire]);
+    }
+
+    /**
+     * Supprime un commentaire de tâche
+     */
+    public function deleteCommentaireTache($id)
+    {
+        $commentaire = CommentaireTache::findOrFail($id);
+        $commentaire->delete();
 
         return response()->json(['success' => true]);
     }
