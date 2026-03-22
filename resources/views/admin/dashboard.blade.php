@@ -2928,8 +2928,12 @@
             }
             tbody.innerHTML = taches.map(t => `
                 <tr>
-                    <td class="px-4 py-2 border-b">${escapeHtml(t.intitule)}</td>
-                    <td class="px-4 py-2 border-b">${escapeHtml(t.personne || '')}</td>
+                    <td class="px-4 py-2 border-b">
+                        <span class="editable-cell cursor-pointer hover:bg-blue-50 px-1 rounded" onclick="editCell(this, ${t.id}, 'intitule')">${escapeHtml(t.intitule)}</span>
+                    </td>
+                    <td class="px-4 py-2 border-b">
+                        <span class="editable-cell cursor-pointer hover:bg-blue-50 px-1 rounded" onclick="editCell(this, ${t.id}, 'personne')">${escapeHtml(t.personne || '')}&nbsp;</span>
+                    </td>
                     <td class="px-4 py-2 border-b">
                         <button onclick="cyclerStatut(${t.id}, '${t.statut}')" class="px-2 py-1 rounded-full text-xs font-semibold cursor-pointer ${statutColors[t.statut] || 'bg-gray-100 text-gray-800'}">
                             ${escapeHtml(t.statut)}
@@ -3003,6 +3007,40 @@
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) chargerTaches();
+            });
+        }
+
+        function editCell(span, id, field) {
+            const currentValue = span.textContent.trim();
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue === '\u00a0' ? '' : currentValue;
+            input.className = 'w-full px-2 py-1 border border-blue-400 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm';
+
+            input.addEventListener('blur', () => saveCell(input, id, field));
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') input.blur();
+                if (e.key === 'Escape') { chargerTaches(); }
+            });
+
+            span.replaceWith(input);
+            input.focus();
+            input.select();
+        }
+
+        function saveCell(input, id, field) {
+            const value = input.value.trim();
+            fetch(`/admin/taches/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ [field]: value }),
             })
             .then(r => r.json())
             .then(data => {
