@@ -704,7 +704,10 @@
                         <div class="space-y-6">
                             <!-- Informations personnelles (éditables) -->
                             <div class="bg-gray-50 p-4 rounded-lg">
-                                <h4 class="text-lg font-semibold text-gray-800 mb-3">Informations personnelles</h4>
+                                <div class="flex flex-wrap justify-between items-start gap-2 mb-3">
+                                    <h4 class="text-lg font-semibold text-gray-800">Informations personnelles</h4>
+                                    <span class="text-sm text-gray-500 italic">Inscrit le ${pilote.created_at}</span>
+                                </div>
                                 <div id="piloteInfoFeedback" class="hidden mb-3 px-4 py-2 rounded text-sm"></div>
                                 <form id="formPiloteInfo" data-pilote-id="${pilote.id}">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -759,10 +762,6 @@
                                                 ${pilote.statut === 'validee' ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Validée</span>' : ''}
                                                 ${pilote.statut === 'refusee' ? '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm">Refusée</span>' : ''}
                                             </p>
-                                        </div>
-                                        <div>
-                                            <label class="text-sm text-gray-600">Date d'inscription</label>
-                                            <p class="font-semibold mt-1">${pilote.created_at}</p>
                                         </div>
                                     </div>
                                     <div class="mt-4 flex justify-end">
