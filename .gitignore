@@ -36,6 +36,7 @@ bootstrap/cache/
 
 # Dossier de travail
 /work/
+/import-club/
 
 # Composer
 /composer.phar
