@@ -282,15 +282,20 @@
                         <span>Nombre de planeurs :</span>
                         <span class="font-semibold">{{ $nombrePlaneurs }}</span>
                     </div>
+                    @if($nombrePlaneurs > 0 && ($nombrePlaneursFactures ?? 0) < $nombrePlaneurs)
+                    <div class="text-xs text-gray-500 italic">
+                        {{ $nombrePlaneurs - ($nombrePlaneursFactures ?? 0) }} planeur{{ ($nombrePlaneurs - ($nombrePlaneursFactures ?? 0)) > 1 ? 's' : '' }} déjà inscrit{{ ($nombrePlaneurs - ($nombrePlaneursFactures ?? 0)) > 1 ? 's' : '' }} par un autre pilote (non facturé{{ ($nombrePlaneurs - ($nombrePlaneursFactures ?? 0)) > 1 ? 's' : '' }}).
+                    </div>
+                    @endif
                     <div class="border-t border-gray-300 pt-2 mt-2">
                         <div class="flex justify-between text-sm text-gray-600 mb-1">
-                            <span>Adhésion ({{ $nombrePlaneurs }} pilote{{ $nombrePlaneurs > 1 ? 's' : '' }})</span>
+                            <span>Adhésion (1 pilote)</span>
                             <span>{{ number_format($montantAdhesion, 2, ',', ' ') }} €</span>
                         </div>
-                        @if($nombrePlaneurs > 0)
+                        @if(($nombrePlaneursFactures ?? 0) > 0)
                         <div class="flex justify-between text-sm text-gray-600 mb-1">
-                            <span>Planeur{{ $nombrePlaneurs > 1 ? 's' : '' }} ({{ $nombrePlaneurs }} × {{ number_format($montantPlaneur, 2, ',', ' ') }} €)</span>
-                            <span>{{ number_format($nombrePlaneurs * $montantPlaneur, 2, ',', ' ') }} €</span>
+                            <span>Planeur{{ $nombrePlaneursFactures > 1 ? 's' : '' }} ({{ $nombrePlaneursFactures }} × {{ number_format($montantPlaneur, 2, ',', ' ') }} €)</span>
+                            <span>{{ number_format($nombrePlaneursFactures * $montantPlaneur, 2, ',', ' ') }} €</span>
                         </div>
                         @endif
                         <div class="flex justify-between text-lg font-bold text-gray-900 mt-3 pt-3 border-t-2 border-gray-400">

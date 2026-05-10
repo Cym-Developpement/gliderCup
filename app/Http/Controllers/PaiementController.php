@@ -77,12 +77,17 @@ class PaiementController extends Controller
         $competition = (!$isTestMode && isset($pilote->competition)) ? $pilote->competition : Competition::active();
         
         // Pour le mode test, utiliser 0 planeurs, sinon compter les planeurs du pilote
+        // - $nombrePlaneurs : tous les planeurs auxquels le pilote est rattaché (affichage)
+        // - $nombrePlaneursFactures : uniquement les planeurs qu'il possède (facturation)
+        //   Un pilote rejoignant un planeur déjà inscrit par un autre ne paie pas le planeur.
         if ($isTestMode) {
             $nombrePlaneurs = 0;
+            $nombrePlaneursFactures = 0;
         } else {
             $nombrePlaneurs = method_exists($pilote, 'planeurs') ? $pilote->planeurs()->count() : 0;
+            $nombrePlaneursFactures = method_exists($pilote, 'planeursProprietaire') ? $pilote->planeursProprietaire()->count() : 0;
         }
-        
+
         // Calculer le montant total
         $montantPlaneur = 50; // 50€ par planeur
         $montantAdhesion = 50; // 50€ d'adhésion par pilote
@@ -91,7 +96,7 @@ class PaiementController extends Controller
         } elseif ($pilote instanceof Pilote && $pilote->montant_custom !== null) {
             $montantTotal = (float) $pilote->montant_custom;
         } else {
-            $montantTotal = ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
+            $montantTotal = ($nombrePlaneursFactures * $montantPlaneur) + $montantAdhesion;
         }
 
         // Informations de paiement depuis la base de données (ou .env en fallback)
@@ -153,6 +158,7 @@ class PaiementController extends Controller
             'pilote' => $pilote,
             'competition' => $competition,
             'nombrePlaneurs' => $nombrePlaneurs,
+            'nombrePlaneursFactures' => $nombrePlaneursFactures,
             'montantPlaneur' => $montantPlaneur,
             'montantAdhesion' => $montantAdhesion,
             'montantTotal' => $montantTotal,

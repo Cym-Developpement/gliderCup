@@ -67,7 +67,7 @@ class AdminController extends Controller
             $visitesAccueilAujourdhui = Counter::getValue('home_visits:competition:' . $competition->id . ':date:' . date('Y-m-d'), 0);
         }
 
-        $inscriptions = $competition->pilotes()->with('planeurs')->orderBy('created_at', 'desc')->paginate(20);
+        $inscriptions = $competition->pilotes()->with(['planeurs', 'planeursProprietaire'])->orderBy('created_at', 'desc')->paginate(20);
 
         $planeursInscrits = $competition->planeurs()
             ->with(['piloteProprietaire', 'pilotes'])
@@ -80,7 +80,7 @@ class AdminController extends Controller
         $paiementsHelloAsso = $competition->pilotes()
             ->whereNotNull('helloasso_checkout_intent_id')
             ->where('helloasso_checkout_intent_id', '!=', '')
-            ->with('planeurs')
+            ->with(['planeurs', 'planeursProprietaire'])
             ->orderBy('created_at', 'desc')
             ->get();
         

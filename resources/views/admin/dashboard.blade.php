@@ -197,8 +197,8 @@
                                     @php
                                         $montantPlaneur = 50;
                                         $montantAdhesion = 50;
-                                        $nombrePlaneurs = $inscription->planeurs->count();
-                                        $prixTotal = $inscription->montant_custom !== null ? $inscription->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
+                                        $nombrePlaneursFactures = $inscription->planeursProprietaire->count();
+                                        $prixTotal = $inscription->montant_custom !== null ? $inscription->montant_custom : ($nombrePlaneursFactures * $montantPlaneur) + $montantAdhesion;
                                     @endphp
                                     {{ number_format($prixTotal, 2, ',', ' ') }} €
                                 </td>
@@ -301,8 +301,8 @@
                                         $montantAdhesion = 50;
                                         $totalGeneral = 0;
                                         foreach($inscriptions as $inscription) {
-                                            $nombrePlaneurs = $inscription->planeurs->count();
-                                            $prixTotal = $inscription->montant_custom !== null ? $inscription->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
+                                            $nombrePlaneursFactures = $inscription->planeursProprietaire->count();
+                                            $prixTotal = $inscription->montant_custom !== null ? $inscription->montant_custom : ($nombrePlaneursFactures * $montantPlaneur) + $montantAdhesion;
                                             $totalGeneral += $prixTotal;
                                         }
                                     @endphp
@@ -445,8 +445,8 @@
                                         @php
                                             $montantPlaneur = 50;
                                             $montantAdhesion = 50;
-                                            $nombrePlaneurs = $paiement->planeurs->count();
-                                            $prixTotal = $paiement->montant_custom !== null ? $paiement->montant_custom : ($nombrePlaneurs * $montantPlaneur) + $montantAdhesion;
+                                            $nombrePlaneursFactures = $paiement->planeursProprietaire->count();
+                                            $prixTotal = $paiement->montant_custom !== null ? $paiement->montant_custom : ($nombrePlaneursFactures * $montantPlaneur) + $montantAdhesion;
                                         @endphp
                                         {{ number_format($prixTotal, 2, ',', ' ') }} €
                                     </td>
