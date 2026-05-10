@@ -315,6 +315,13 @@
                             formulaire de contact
                         </button>
                     </div>
+                    <div class="flex items-center justify-center gap-2 text-gray-700 flex-wrap mt-2">
+                        <i class="fas fa-phone text-blue-600"></i>
+                        <span class="text-sm">Téléphone :</span>
+                        <a href="tel:+33672058213" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                            06.72.05.82.13
+                        </a>
+                    </div>
                 </div>
                 
                 <div class="flex justify-center gap-4 flex-wrap">
