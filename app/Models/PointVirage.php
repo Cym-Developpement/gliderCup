@@ -18,6 +18,7 @@ class PointVirage extends Model
         'points',
         'public',
         'image',
+        'tag_id',
     ];
 
     protected function casts(): array
@@ -36,5 +37,10 @@ class PointVirage extends Model
     public function competition(): BelongsTo
     {
         return $this->belongsTo(Competition::class);
+    }
+
+    public function tag(): BelongsTo
+    {
+        return $this->belongsTo(PointVirageTag::class, 'tag_id');
     }
 }

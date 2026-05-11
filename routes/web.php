@@ -28,9 +28,22 @@ Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'send']
 Route::get('/api/openaip/data', [OpenAIPController::class, 'getData'])->name('openaip.data');
 Route::get('/api/openaip/tiles/{z}/{x}/{y}.png', [OpenAIPTileController::class, 'getTile'])->name('openaip.tiles');
 Route::get('/airport/{icao}', [\App\Http\Controllers\InscriptionController::class, 'getAirportData'])->name('airport.data');
-Route::get('/img/marker/{numero}', function ($numero) {
+Route::get('/img/marker/{numero}', function ($numero, \Illuminate\Http\Request $request) {
     $svg = file_get_contents(public_path('img/path1.svg'));
     $svg = str_replace('#PP', $numero, $svg);
+    $couleur = $request->query('couleur');
+    if ($couleur && preg_match('/^#?[0-9a-fA-F]{6}$/', $couleur)) {
+        $hex = '#' . ltrim($couleur, '#');
+        $svg = str_replace('fill:#ffffff', 'fill:' . $hex, $svg);
+        // Texte en noir ou blanc selon la luminance du fond
+        $r = hexdec(substr($hex, 1, 2));
+        $g = hexdec(substr($hex, 3, 2));
+        $b = hexdec(substr($hex, 5, 2));
+        $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+        if ($luminance < 0.5) {
+            $svg = str_replace('fill:#000000;fill-opacity:1', 'fill:#ffffff;fill-opacity:1', $svg);
+        }
+    }
     return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
 })->where('numero', '[0-9]+')->name('marker.svg');
 
@@ -88,6 +101,9 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/points-virage', [AdminController::class, 'getPointsVirage'])->name('points-virage.index');
     Route::post('/points-virage/{id?}', [AdminController::class, 'savePointVirage'])->name('points-virage.save');
     Route::delete('/points-virage/{id}', [AdminController::class, 'deletePointVirage'])->name('points-virage.delete');
+    Route::get('/points-virage-tags', [AdminController::class, 'getPointsVirageTags'])->name('points-virage-tags.index');
+    Route::post('/points-virage-tags/{id?}', [AdminController::class, 'savePointVirageTag'])->name('points-virage-tags.save');
+    Route::delete('/points-virage-tags/{id}', [AdminController::class, 'deletePointVirageTag'])->name('points-virage-tags.delete');
     Route::post('/competition/search-airport', [AdminController::class, 'searchAirport'])->name('competition.search-airport');
     Route::get('/competition/airport-data/{icao}', [AdminController::class, 'getAirportData'])->name('competition.airport-data');
     Route::get('/paiement/test', [\App\Http\Controllers\PaiementController::class, 'test'])->name('paiement.test');

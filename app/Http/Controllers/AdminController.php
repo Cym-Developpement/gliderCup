@@ -20,6 +20,7 @@ use App\Notifications\ReponseContact;
 use App\Models\Message;
 use App\Models\MessageGroupe;
 use App\Models\PointVirage;
+use App\Models\PointVirageTag;
 use App\Models\Tache;
 use App\Models\CommentaireTache;
 use App\Services\MapGeneratorService;
@@ -1008,7 +1009,7 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
         }
 
-        $points = $competition->pointsVirage()->orderBy('nom')->get();
+        $points = $competition->pointsVirage()->with('tag')->orderBy('nom')->get();
 
         return response()->json([
             'success' => true,
@@ -1019,6 +1020,12 @@ class AdminController extends Controller
                 'image' => $p->image,
                 'lat' => (float) $p->latitude,
                 'lng' => (float) $p->longitude,
+                'tag_id' => $p->tag_id,
+                'tag' => $p->tag ? [
+                    'id' => $p->tag->id,
+                    'nom' => $p->tag->nom,
+                    'couleur' => $p->tag->couleur,
+                ] : null,
             ]),
         ]);
     }
@@ -1039,6 +1046,11 @@ class AdminController extends Controller
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             'image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+            'tag_id' => [
+                'nullable',
+                \Illuminate\Validation\Rule::exists('points_virage_tags', 'id')
+                    ->where(fn($q) => $q->where('competition_id', $competition->id)),
+            ],
         ]);
 
         if ($id) {
@@ -1052,6 +1064,7 @@ class AdminController extends Controller
         $point->description = $validated['description'] ?? null;
         $point->latitude = $validated['latitude'];
         $point->longitude = $validated['longitude'];
+        $point->tag_id = $validated['tag_id'] ?? null;
 
         if ($request->hasFile('image')) {
             // Supprimer l'ancienne image
@@ -1069,6 +1082,7 @@ class AdminController extends Controller
         }
 
         $point->save();
+        $point->load('tag');
 
         return response()->json([
             'success' => true,
@@ -1079,8 +1093,74 @@ class AdminController extends Controller
                 'image' => $point->image,
                 'lat' => (float) $point->latitude,
                 'lng' => (float) $point->longitude,
+                'tag_id' => $point->tag_id,
+                'tag' => $point->tag ? [
+                    'id' => $point->tag->id,
+                    'nom' => $point->tag->nom,
+                    'couleur' => $point->tag->couleur,
+                ] : null,
             ],
         ]);
+    }
+
+    /**
+     * Liste les libellés (tags) des points de virage de la compétition active
+     */
+    public function getPointsVirageTags()
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $tags = $competition->pointsVirageTags()->orderBy('nom')->get(['id', 'nom', 'couleur']);
+        return response()->json(['success' => true, 'tags' => $tags]);
+    }
+
+    /**
+     * Crée ou met à jour un libellé de la compétition active
+     */
+    public function savePointVirageTag(Request $request, $id = null)
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $validated = $request->validate([
+            'nom' => [
+                'required', 'string', 'max:50',
+                \Illuminate\Validation\Rule::unique('points_virage_tags', 'nom')
+                    ->where(fn($q) => $q->where('competition_id', $competition->id))
+                    ->ignore($id),
+            ],
+            'couleur' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $tag = $id
+            ? PointVirageTag::where('competition_id', $competition->id)->findOrFail($id)
+            : new PointVirageTag(['competition_id' => $competition->id]);
+        $tag->competition_id = $competition->id;
+        $tag->nom = $validated['nom'];
+        $tag->couleur = $validated['couleur'];
+        $tag->save();
+
+        return response()->json(['success' => true, 'tag' => $tag->only(['id', 'nom', 'couleur'])]);
+    }
+
+    /**
+     * Supprime un libellé de la compétition active (les points liés repassent à tag_id=null)
+     */
+    public function deletePointVirageTag($id)
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $tag = PointVirageTag::where('competition_id', $competition->id)->findOrFail($id);
+        $tag->delete();
+        return response()->json(['success' => true]);
     }
 
     /**

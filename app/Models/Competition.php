@@ -57,6 +57,11 @@ class Competition extends Model
         return $this->hasMany(PointVirage::class);
     }
 
+    public function pointsVirageTags(): HasMany
+    {
+        return $this->hasMany(PointVirageTag::class);
+    }
+
     /**
      * Obtenir la compétition active
      * Utilise une variable privée statique pour stocker l'ID (solution temporaire)

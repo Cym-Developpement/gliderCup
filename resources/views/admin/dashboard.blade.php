@@ -1871,6 +1871,17 @@
                         <textarea id="editPointDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Description du point de virage..."></textarea>
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Libellé</label>
+                        <div class="flex gap-2 items-center">
+                            <select id="editPointTagId" class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">— Aucun —</option>
+                            </select>
+                            <button type="button" onclick="ouvrirModalGestionTags()" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 whitespace-nowrap">
+                                Gérer
+                            </button>
+                        </div>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
                         <div id="editPointImagePreview" class="mb-2 hidden">
                             <img id="editPointImageImg" src="" alt="" class="max-h-32 rounded border">
@@ -1887,6 +1898,45 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal de gestion des libellés -->
+    <div id="modalGestionTags" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 70;">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Gestion des libellés</h3>
+                <button onclick="fermerModalGestionTags()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="tagsFeedback" class="hidden mb-3 px-4 py-2 rounded text-sm"></div>
+
+            <form id="formTag" class="mb-4 pb-4 border-b border-gray-200">
+                <input type="hidden" id="tagId" value="">
+                <div class="flex gap-2 items-end">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Nom</label>
+                        <input type="text" id="tagNom" maxlength="50" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Couleur</label>
+                        <input type="color" id="tagCouleur" value="#3b82f6" class="h-10 w-14 border border-gray-300 rounded-md cursor-pointer">
+                    </div>
+                    <button type="submit" id="tagSubmitBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
+                        Ajouter
+                    </button>
+                    <button type="button" onclick="resetFormTag()" id="tagAnnulerBtn" class="hidden px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                        Annuler
+                    </button>
+                </div>
+            </form>
+
+            <div id="listeTagsContainer" class="space-y-2 max-h-80 overflow-y-auto">
+                <p class="text-gray-400 italic text-sm">Aucun libellé</p>
+            </div>
         </div>
     </div>
 
@@ -1919,7 +1969,8 @@
         let modeEdition = false;
         let clickHandler = null;
         function escHandler(e) { if (e.key === 'Escape') desactiverModeEdition(); }
-        let pointsVirage = []; // [{id, nom, description, image, lat, lng, marker}]
+        let pointsVirage = []; // [{id, nom, description, image, lat, lng, tag_id, tag, marker}]
+        let pointsVirageTags = []; // [{id, nom, couleur}]
         let baseCoords = null;
         let pendingLatLng = null; // Coordonnées en attente lors de l'ajout
 
@@ -1937,15 +1988,47 @@
         // Créer un marqueur pour un point
         function creerMarqueur(point, numero) {
             const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], point.lat, point.lng).toFixed(1) : null;
+            const couleur = point.tag && point.tag.couleur ? point.tag.couleur : null;
+            const iconUrl = couleur
+                ? `/img/marker/${numero}?couleur=${encodeURIComponent(couleur)}`
+                : `/img/marker/${numero}`;
             const icon = L.icon({
-                iconUrl: `/img/marker/${numero}`,
+                iconUrl,
                 iconSize: [70, 60],
                 iconAnchor: [35, 30],
                 popupAnchor: [0, -30],
             });
+            const tagHtml = point.tag
+                ? `<br><span style="display:inline-block;padding:1px 6px;border-radius:9999px;background:${point.tag.couleur};color:${textColorForBg(point.tag.couleur)};font-size:11px;font-weight:600;">${escapeHtml(point.tag.nom)}</span>`
+                : '';
             const marker = L.marker([point.lat, point.lng], { icon }).addTo(cartePointsVirage)
-                .bindPopup(`<b>#${numero} ${point.nom}</b><br>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}`);
+                .bindPopup(`<b>#${numero} ${escapeHtml(point.nom)}</b>${tagHtml}<br>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}`);
             return marker;
+        }
+
+        // Couleur de texte lisible sur un fond hex (#RRGGBB)
+        function textColorForBg(hex) {
+            if (!hex || hex.length !== 7) return '#000';
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return l < 0.5 ? '#fff' : '#000';
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[c]);
+        }
+
+        // Peuple le <select> des libellés
+        function peuplerSelectTags(selectedId) {
+            const select = document.getElementById('editPointTagId');
+            if (!select) return;
+            select.innerHTML = '<option value="">— Aucun —</option>' + pointsVirageTags.map(t =>
+                `<option value="${t.id}" ${String(t.id) === String(selectedId) ? 'selected' : ''}>${escapeHtml(t.nom)}</option>`
+            ).join('');
         }
 
         // Ouvrir la modal d'édition pour un nouveau point (depuis le clic carte)
@@ -1961,6 +2044,7 @@
             document.getElementById('editPointImage').value = '';
             document.getElementById('editPointImagePreview').classList.add('hidden');
             document.getElementById('editPointFeedback').classList.add('hidden');
+            peuplerSelectTags(null);
             document.getElementById('modalEditPoint').classList.remove('hidden');
             desactiverModeEdition();
         }
@@ -1979,6 +2063,7 @@
             document.getElementById('editPointDescription').value = p.description || '';
             document.getElementById('editPointImage').value = '';
             document.getElementById('editPointFeedback').classList.add('hidden');
+            peuplerSelectTags(p.tag_id);
             if (p.image) {
                 document.getElementById('editPointImageImg').src = '/' + p.image;
                 document.getElementById('editPointImagePreview').classList.remove('hidden');
@@ -2004,6 +2089,8 @@
                 formData.append('description', document.getElementById('editPointDescription').value);
                 formData.append('latitude', document.getElementById('editPointLat').value);
                 formData.append('longitude', document.getElementById('editPointLng').value);
+                const tagId = document.getElementById('editPointTagId').value;
+                if (tagId) formData.append('tag_id', tagId);
                 const imageFile = document.getElementById('editPointImage').files[0];
                 if (imageFile) {
                     formData.append('image', imageFile);
@@ -2085,14 +2172,18 @@
             container.innerHTML = pointsVirage.map((p, i) => {
                 const num = i + 1;
                 const dist = baseCoords ? distanceKm(baseCoords[0], baseCoords[1], p.lat, p.lng).toFixed(1) : null;
+                const tagBadge = p.tag
+                    ? `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mt-1" style="background:${p.tag.couleur};color:${textColorForBg(p.tag.couleur)};">${escapeHtml(p.tag.nom)}</span>`
+                    : '';
                 return `
                     <div class="bg-gray-50 p-2 rounded border border-gray-200">
                         <div class="flex justify-between items-start">
                             <div class="cursor-pointer flex-1" onclick="cartePointsVirage.setView([${p.lat}, ${p.lng}], 13); pointsVirage[${i}].marker.openPopup();">
-                                <div class="font-semibold text-gray-800"><span class="text-blue-600">#${num}</span> ${p.nom}</div>
+                                <div class="font-semibold text-gray-800"><span class="text-blue-600">#${num}</span> ${escapeHtml(p.nom)}</div>
+                                ${tagBadge}
                                 <div class="text-xs text-gray-500">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
                                 ${dist ? `<div class="text-xs text-blue-600">${dist} km de la base</div>` : ''}
-                                ${p.description ? `<div class="text-xs text-gray-600 mt-1 truncate">${p.description}</div>` : ''}
+                                ${p.description ? `<div class="text-xs text-gray-600 mt-1 truncate">${escapeHtml(p.description)}</div>` : ''}
                             </div>
                             <div class="flex gap-1 ml-2">
                                 <button onclick="ouvrirModalEditerPoint(${i})" class="text-blue-400 hover:text-blue-600 p-1" title="Modifier">
@@ -2128,6 +2219,158 @@
             }
             return [];
         }
+
+        // Charger les libellés depuis le backend
+        async function chargerTagsPointsVirage() {
+            try {
+                const response = await fetch('/admin/points-virage-tags', {
+                    headers: { 'Accept': 'application/json' },
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    pointsVirageTags = data.success ? data.tags : [];
+                }
+            } catch (err) {
+                console.error('Erreur chargement libellés:', err);
+                pointsVirageTags = [];
+            }
+        }
+
+        function ouvrirModalGestionTags() {
+            document.getElementById('modalGestionTags').classList.remove('hidden');
+            document.getElementById('tagsFeedback').classList.add('hidden');
+            resetFormTag();
+            rafraichirListeTags();
+        }
+
+        function fermerModalGestionTags() {
+            document.getElementById('modalGestionTags').classList.add('hidden');
+            // Met à jour le select du modal d'édition si ouvert, ainsi que les marqueurs
+            const selectedId = document.getElementById('editPointTagId')?.value || '';
+            peuplerSelectTags(selectedId);
+            // Resynchroniser les tags sur les points existants (au cas où un tag a été modifié/supprimé)
+            const tagsById = Object.fromEntries(pointsVirageTags.map(t => [String(t.id), t]));
+            pointsVirage.forEach(p => {
+                if (p.tag_id) {
+                    p.tag = tagsById[String(p.tag_id)] || null;
+                    if (!p.tag) p.tag_id = null;
+                }
+            });
+            rafraichirListePoints();
+        }
+
+        function resetFormTag() {
+            document.getElementById('tagId').value = '';
+            document.getElementById('tagNom').value = '';
+            document.getElementById('tagCouleur').value = '#3b82f6';
+            document.getElementById('tagSubmitBtn').textContent = 'Ajouter';
+            document.getElementById('tagAnnulerBtn').classList.add('hidden');
+        }
+
+        function editerTag(id) {
+            const tag = pointsVirageTags.find(t => String(t.id) === String(id));
+            if (!tag) return;
+            document.getElementById('tagId').value = tag.id;
+            document.getElementById('tagNom').value = tag.nom;
+            document.getElementById('tagCouleur').value = tag.couleur;
+            document.getElementById('tagSubmitBtn').textContent = 'Modifier';
+            document.getElementById('tagAnnulerBtn').classList.remove('hidden');
+        }
+
+        function rafraichirListeTags() {
+            const container = document.getElementById('listeTagsContainer');
+            if (!container) return;
+            if (pointsVirageTags.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 italic text-sm">Aucun libellé</p>';
+                return;
+            }
+            container.innerHTML = pointsVirageTags.map(t => `
+                <div class="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="inline-block w-5 h-5 rounded border border-gray-300" style="background:${t.couleur}"></span>
+                        <span class="text-sm font-medium" style="color:${t.couleur}">${escapeHtml(t.nom)}</span>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="editerTag(${t.id})" class="text-blue-400 hover:text-blue-600 p-1" title="Modifier">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="supprimerTag(${t.id})" class="text-red-400 hover:text-red-600 p-1" title="Supprimer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function supprimerTag(id) {
+            const tag = pointsVirageTags.find(t => String(t.id) === String(id));
+            if (!tag) return;
+            if (!confirm('Supprimer le libellé "' + tag.nom + '" ? Les points associés perdront ce libellé.')) return;
+            try {
+                const response = await fetch(`/admin/points-virage-tags/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                });
+                if (response.ok) {
+                    pointsVirageTags = pointsVirageTags.filter(t => String(t.id) !== String(id));
+                    rafraichirListeTags();
+                }
+            } catch (err) {
+                console.error('Erreur suppression libellé:', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const formTag = document.getElementById('formTag');
+            if (formTag) {
+                formTag.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const feedback = document.getElementById('tagsFeedback');
+                    const id = document.getElementById('tagId').value;
+                    const payload = {
+                        nom: document.getElementById('tagNom').value,
+                        couleur: document.getElementById('tagCouleur').value,
+                    };
+                    try {
+                        const url = id ? `/admin/points-virage-tags/${id}` : '/admin/points-virage-tags';
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload),
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            if (id) {
+                                const idx = pointsVirageTags.findIndex(t => String(t.id) === String(id));
+                                if (idx !== -1) pointsVirageTags[idx] = result.tag;
+                            } else {
+                                pointsVirageTags.push(result.tag);
+                            }
+                            pointsVirageTags.sort((a, b) => a.nom.localeCompare(b.nom));
+                            resetFormTag();
+                            rafraichirListeTags();
+                            feedback.classList.add('hidden');
+                        } else {
+                            feedback.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                            feedback.classList.add('bg-red-100', 'text-red-800');
+                            feedback.textContent = result.message || (result.errors ? Object.values(result.errors).flat().join(' ') : 'Erreur.');
+                        }
+                    } catch (err) {
+                        feedback.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                        feedback.classList.add('bg-red-100', 'text-red-800');
+                        feedback.textContent = 'Erreur réseau.';
+                    }
+                });
+            }
+        });
 
         function chargerLeaflet() {
             return new Promise((resolve) => {
@@ -2312,7 +2555,8 @@
                         }
                     }, 200);
 
-                    // Charger les points de virage existants depuis le backend
+                    // Charger les libellés puis les points de virage existants
+                    await chargerTagsPointsVirage();
                     const pointsExistants = await chargerPointsVirage();
                     pointsExistants.forEach(p => pointsVirage.push(p));
                     rafraichirListePoints();
