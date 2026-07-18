@@ -1106,8 +1106,8 @@ class AdminController extends Controller
 
     /**
      * Importe des points de virage depuis un fichier .cup (SeeYou) ou .csv.
-     * Les points sont ajoutés à la compétition active ; les doublons
-     * (même nom + mêmes coordonnées) sont ignorés.
+     * Les points sont ajoutés à la compétition active ; un point est ignoré
+     * si un autre se trouve déjà à moins de 2 km.
      */
     public function importPointsVirage(Request $request)
     {
@@ -1155,11 +1155,10 @@ class AdminController extends Controller
             ], 422);
         }
 
-        // Index des points existants pour ignorer les doublons
-        $existants = [];
-        foreach ($competition->pointsVirage()->get(['nom', 'latitude', 'longitude']) as $p) {
-            $existants[self::cleDoublonPoint($p->nom, $p->latitude, $p->longitude)] = true;
-        }
+        // Coordonnées des points existants, pour ignorer ceux trop proches
+        $existants = $competition->pointsVirage()->get(['latitude', 'longitude'])
+            ->map(fn($p) => [(float) $p->latitude, (float) $p->longitude])
+            ->all();
 
         $crees = [];
         $ignores = 0;
@@ -1171,12 +1170,12 @@ class AdminController extends Controller
                     $ignores++;
                     continue;
                 }
-                $cle = self::cleDoublonPoint($row['nom'], $row['latitude'], $row['longitude']);
-                if (isset($existants[$cle])) {
+                // Ignorer si un point est déjà présent à moins de 2 km
+                if (self::pointTropProche($row['latitude'], $row['longitude'], $existants)) {
                     $ignores++;
                     continue;
                 }
-                $existants[$cle] = true;
+                $existants[] = [(float) $row['latitude'], (float) $row['longitude']];
 
                 $point = PointVirage::create([
                     'competition_id' => $competition->id,
@@ -1208,15 +1207,39 @@ class AdminController extends Controller
     }
 
     /**
-     * Clé de déduplication d'un point : nom normalisé + coordonnées arrondies à
-     * 4 décimales (~11 m). Tolérance choisie pour absorber l'arrondi de l'export
-     * .cup (~1,8 m) et permettre un ré-import sans créer de doublons.
+     * Distance minimale (km) en dessous de laquelle deux points de virage
+     * sont considérés comme un doublon lors d'un import.
      */
-    private static function cleDoublonPoint(string $nom, $lat, $lng): string
+    private const DISTANCE_MIN_KM = 2.0;
+
+    /**
+     * Indique si un point se trouve à moins de DISTANCE_MIN_KM d'un des points fournis.
+     *
+     * @param array<int, array{0: float, 1: float}> $points Liste de [latitude, longitude]
+     */
+    private static function pointTropProche(float $lat, float $lng, array $points): bool
     {
-        return mb_strtolower(trim($nom))
-            . '|' . number_format((float) $lat, 4, '.', '')
-            . '|' . number_format((float) $lng, 4, '.', '');
+        foreach ($points as [$pLat, $pLng]) {
+            if (self::distanceKm($lat, $lng, $pLat, $pLng) < self::DISTANCE_MIN_KM) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Distance en kilomètres entre deux coordonnées (formule de Haversine).
+     */
+    private static function distanceKm(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $rayonKm = 6371;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return $rayonKm * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 
     /**

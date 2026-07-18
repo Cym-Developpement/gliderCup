@@ -2184,7 +2184,7 @@
                     (result.points || []).forEach(p => pointsVirage.push(p));
                     rafraichirListePoints();
                     let msg = result.imported + ' point(s) de virage importé(s).';
-                    if (result.skipped) msg += '\n' + result.skipped + ' doublon(s) ignoré(s).';
+                    if (result.skipped) msg += '\n' + result.skipped + ' point(s) ignoré(s) (déjà un point à moins de 2 km).';
                     alert(msg);
                 } else {
                     alert(result.message || 'Erreur lors de l\'import du fichier.');
