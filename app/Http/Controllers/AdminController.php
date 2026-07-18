@@ -28,6 +28,7 @@ use App\Services\OpenAipService;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -1101,6 +1102,121 @@ class AdminController extends Controller
                 ] : null,
             ],
         ]);
+    }
+
+    /**
+     * Importe des points de virage depuis un fichier .cup (SeeYou) ou .csv.
+     * Les points sont ajoutés à la compétition active ; les doublons
+     * (même nom + mêmes coordonnées) sont ignorés.
+     */
+    public function importPointsVirage(Request $request)
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $request->validate([
+            'fichier' => 'required|file|max:2048',
+        ]);
+
+        $file = $request->file('fichier');
+        $ext = strtolower($file->getClientOriginalExtension());
+
+        $parsers = [
+            'cup' => \App\Services\GpsImport\CupImport::class,
+            'csv' => \App\Services\GpsImport\CsvImport::class,
+            'txt' => \App\Services\GpsImport\CsvImport::class,
+        ];
+        if (!isset($parsers[$ext])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Format non supporté. Utilisez un fichier .cup ou .csv.',
+            ], 422);
+        }
+
+        // Normaliser l'encodage (les fichiers .cup sont souvent en Windows-1252)
+        $content = file_get_contents($file->getRealPath());
+        $content = preg_replace('/^\xEF\xBB\xBF/', '', $content); // BOM UTF-8
+        if (!mb_check_encoding($content, 'UTF-8')) {
+            $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
+        }
+
+        try {
+            $parsed = $parsers[$ext]::parse($content);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Fichier illisible.'], 422);
+        }
+
+        if (empty($parsed)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun point valide trouvé dans le fichier.',
+            ], 422);
+        }
+
+        // Index des points existants pour ignorer les doublons
+        $existants = [];
+        foreach ($competition->pointsVirage()->get(['nom', 'latitude', 'longitude']) as $p) {
+            $existants[self::cleDoublonPoint($p->nom, $p->latitude, $p->longitude)] = true;
+        }
+
+        $crees = [];
+        $ignores = 0;
+        $max = 1000;
+
+        DB::transaction(function () use ($parsed, $competition, &$existants, &$crees, &$ignores, $max) {
+            foreach ($parsed as $row) {
+                if (count($crees) >= $max) {
+                    $ignores++;
+                    continue;
+                }
+                $cle = self::cleDoublonPoint($row['nom'], $row['latitude'], $row['longitude']);
+                if (isset($existants[$cle])) {
+                    $ignores++;
+                    continue;
+                }
+                $existants[$cle] = true;
+
+                $point = PointVirage::create([
+                    'competition_id' => $competition->id,
+                    'nom' => mb_substr($row['nom'], 0, 255),
+                    'description' => $row['description'],
+                    'latitude' => $row['latitude'],
+                    'longitude' => $row['longitude'],
+                ]);
+
+                $crees[] = [
+                    'id' => $point->id,
+                    'nom' => $point->nom,
+                    'description' => $point->description,
+                    'image' => $point->image,
+                    'lat' => (float) $point->latitude,
+                    'lng' => (float) $point->longitude,
+                    'tag_id' => $point->tag_id,
+                    'tag' => null,
+                ];
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'imported' => count($crees),
+            'skipped' => $ignores,
+            'points' => $crees,
+        ]);
+    }
+
+    /**
+     * Clé de déduplication d'un point : nom normalisé + coordonnées arrondies à
+     * 4 décimales (~11 m). Tolérance choisie pour absorber l'arrondi de l'export
+     * .cup (~1,8 m) et permettre un ré-import sans créer de doublons.
+     */
+    private static function cleDoublonPoint(string $nom, $lat, $lng): string
+    {
+        return mb_strtolower(trim($nom))
+            . '|' . number_format((float) $lat, 4, '.', '')
+            . '|' . number_format((float) $lng, 4, '.', '');
     }
 
     /**

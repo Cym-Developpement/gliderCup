@@ -1832,6 +1832,13 @@
                     <button onclick="activerModeEdition()" id="btnAjouterPoint" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                         Ajouter un point de virage
                     </button>
+                    <button type="button" onclick="document.getElementById('importPointsFichier').click()" id="btnImporterPoints" class="w-full px-3 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                        Importer un fichier (.cup / .csv)
+                    </button>
+                    <input type="file" id="importPointsFichier" accept=".cup,.csv,.txt" class="hidden" onchange="importerPointsFichier(this)">
+                    <a href="{{ asset('exemples/points-virage-exemple.csv') }}" download="points-virage-exemple.csv" class="block text-xs text-gray-500 hover:text-indigo-600 text-center underline">
+                        Télécharger un exemple CSV
+                    </a>
                     <a href="{{ route('export.gps', 'cup') }}" class="w-full px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition inline-block text-center">
                         Télécharger .CUP
                     </a>
@@ -2151,6 +2158,43 @@
             if (point.marker) cartePointsVirage.removeLayer(point.marker);
             pointsVirage.splice(index, 1);
             rafraichirListePoints();
+        }
+
+        // Importer des points depuis un fichier .cup ou .csv
+        async function importerPointsFichier(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const btn = document.getElementById('btnImporterPoints');
+            const libelle = btn ? btn.textContent : '';
+            if (btn) { btn.disabled = true; btn.textContent = 'Import en cours…'; }
+
+            const formData = new FormData();
+            formData.append('fichier', file);
+            input.value = ''; // permet de réimporter le même fichier
+
+            try {
+                const response = await fetch('/admin/points-virage/import', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    body: formData,
+                });
+                const result = await response.json();
+                if (result.success) {
+                    (result.points || []).forEach(p => pointsVirage.push(p));
+                    rafraichirListePoints();
+                    let msg = result.imported + ' point(s) de virage importé(s).';
+                    if (result.skipped) msg += '\n' + result.skipped + ' doublon(s) ignoré(s).';
+                    alert(msg);
+                } else {
+                    alert(result.message || 'Erreur lors de l\'import du fichier.');
+                }
+            } catch (err) {
+                console.error('Erreur import:', err);
+                alert('Erreur réseau lors de l\'import.');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = libelle; }
+            }
         }
 
         // Rafraîchir la liste dans le panneau droit et recréer les marqueurs

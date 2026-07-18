@@ -99,6 +99,7 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::post('/competition/reglement', [AdminController::class, 'updateReglement'])->name('competition.reglement.update');
     Route::post('/competition/code-aeroport', [AdminController::class, 'updateCodeAeroport'])->name('competition.code-aeroport.update');
     Route::get('/points-virage', [AdminController::class, 'getPointsVirage'])->name('points-virage.index');
+    Route::post('/points-virage/import', [AdminController::class, 'importPointsVirage'])->name('points-virage.import');
     Route::post('/points-virage/{id?}', [AdminController::class, 'savePointVirage'])->name('points-virage.save');
     Route::delete('/points-virage/{id}', [AdminController::class, 'deletePointVirage'])->name('points-virage.delete');
     Route::get('/points-virage-tags', [AdminController::class, 'getPointsVirageTags'])->name('points-virage-tags.index');
