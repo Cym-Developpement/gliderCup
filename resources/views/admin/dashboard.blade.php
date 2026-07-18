@@ -1832,10 +1832,14 @@
                     <button onclick="activerModeEdition()" id="btnAjouterPoint" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                         Ajouter un point de virage
                     </button>
-                    <button type="button" onclick="document.getElementById('importPointsFichier').click()" id="btnImporterPoints" class="w-full px-3 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
-                        Importer un fichier (.cup / .csv)
+                    <button type="button" onclick="document.getElementById('importPointsCup').click()" class="w-full px-3 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                        Importer un fichier .cup
                     </button>
-                    <input type="file" id="importPointsFichier" accept=".cup,.csv,.txt" class="hidden" onchange="importerPointsFichier(this)">
+                    <input type="file" id="importPointsCup" accept=".cup" class="hidden" onchange="importerPointsFichier(this)">
+                    <button type="button" onclick="document.getElementById('importPointsCsv').click()" class="w-full px-3 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                        Importer un fichier .csv
+                    </button>
+                    <input type="file" id="importPointsCsv" accept=".csv,.txt,text/csv,text/plain" class="hidden" onchange="importerPointsFichier(this)">
                     <a href="{{ asset('exemples/points-virage-exemple.csv') }}" download="points-virage-exemple.csv" class="block text-xs text-gray-500 hover:text-indigo-600 text-center underline">
                         Télécharger un exemple CSV
                     </a>
@@ -2165,7 +2169,7 @@
             const file = input.files[0];
             if (!file) return;
 
-            const btn = document.getElementById('btnImporterPoints');
+            const btn = input.previousElementSibling;
             const libelle = btn ? btn.textContent : '';
             if (btn) { btn.disabled = true; btn.textContent = 'Import en cours…'; }
 
