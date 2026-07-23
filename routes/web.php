@@ -101,6 +101,7 @@ Route::middleware(['auth:web', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/points-virage', [AdminController::class, 'getPointsVirage'])->name('points-virage.index');
     Route::post('/points-virage/import', [AdminController::class, 'importPointsVirage'])->name('points-virage.import');
     Route::post('/points-virage/{id?}', [AdminController::class, 'savePointVirage'])->name('points-virage.save');
+    Route::delete('/points-virage', [AdminController::class, 'deleteAllPointsVirage'])->name('points-virage.delete-all');
     Route::delete('/points-virage/{id}', [AdminController::class, 'deletePointVirage'])->name('points-virage.delete');
     Route::get('/points-virage-tags', [AdminController::class, 'getPointsVirageTags'])->name('points-virage-tags.index');
     Route::post('/points-virage-tags/{id?}', [AdminController::class, 'savePointVirageTag'])->name('points-virage-tags.save');

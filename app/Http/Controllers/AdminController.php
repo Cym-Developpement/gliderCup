@@ -1324,6 +1324,28 @@ class AdminController extends Controller
     }
 
     /**
+     * Supprime tous les points de virage de la compétition active
+     */
+    public function deleteAllPointsVirage()
+    {
+        $competition = Competition::active();
+        if (!$competition) {
+            return response()->json(['success' => false, 'error' => 'Aucune compétition active.'], 404);
+        }
+
+        $points = $competition->pointsVirage()->get();
+
+        foreach ($points as $point) {
+            if ($point->image && file_exists(public_path($point->image))) {
+                unlink(public_path($point->image));
+            }
+            $point->delete();
+        }
+
+        return response()->json(['success' => true, 'deleted' => $points->count()]);
+    }
+
+    /**
      * Retourne les tâches de la compétition active en JSON
      */
     public function getTaches()

@@ -1846,6 +1846,9 @@
                     <a href="{{ route('export.gps', 'cup') }}" class="w-full px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition inline-block text-center">
                         Télécharger .CUP
                     </a>
+                    <button type="button" onclick="supprimerTousLesPointsVirage()" id="btnSupprimerTousPoints" class="w-full px-3 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition">
+                        Supprimer tous les points
+                    </button>
                 </div>
                 <div id="listePointsVirage" class="space-y-2 text-sm"></div>
             </div>
@@ -2162,6 +2165,39 @@
             if (point.marker) cartePointsVirage.removeLayer(point.marker);
             pointsVirage.splice(index, 1);
             rafraichirListePoints();
+        }
+
+        // Supprimer tous les points de virage de la compétition
+        async function supprimerTousLesPointsVirage() {
+            if (pointsVirage.length === 0) {
+                alert('Aucun point de virage à supprimer.');
+                return;
+            }
+            if (!confirm('Supprimer les ' + pointsVirage.length + ' points de virage ? Cette action est irréversible.')) return;
+
+            const btn = document.getElementById('btnSupprimerTousPoints');
+            const libelle = btn ? btn.textContent : '';
+            if (btn) { btn.disabled = true; btn.textContent = 'Suppression en cours…'; }
+
+            try {
+                const response = await fetch('/admin/points-virage', {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                });
+                const result = await response.json();
+                if (result.success) {
+                    pointsVirage.forEach(p => { if (p.marker) cartePointsVirage.removeLayer(p.marker); });
+                    pointsVirage.length = 0;
+                    rafraichirListePoints();
+                } else {
+                    alert(result.error || 'Erreur lors de la suppression.');
+                }
+            } catch (err) {
+                console.error('Erreur suppression:', err);
+                alert('Erreur réseau lors de la suppression.');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = libelle; }
+            }
         }
 
         // Importer des points depuis un fichier .cup ou .csv
