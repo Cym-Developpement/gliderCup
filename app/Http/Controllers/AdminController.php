@@ -1118,7 +1118,10 @@ class AdminController extends Controller
 
         $request->validate([
             'fichier' => 'required|file|max:2048',
+            'tag_nom' => 'nullable|string|max:50',
         ]);
+
+        $tagNom = trim((string) $request->input('tag_nom', ''));
 
         $file = $request->file('fichier');
         $ext = strtolower($file->getClientOriginalExtension());
@@ -1163,8 +1166,9 @@ class AdminController extends Controller
         $crees = [];
         $ignores = 0;
         $max = 1000;
+        $tag = null;
 
-        DB::transaction(function () use ($parsed, $competition, &$existants, &$crees, &$ignores, $max) {
+        DB::transaction(function () use ($parsed, $competition, $tagNom, &$tag, &$existants, &$crees, &$ignores, $max) {
             foreach ($parsed as $row) {
                 if (count($crees) >= $max) {
                     $ignores++;
@@ -1177,12 +1181,21 @@ class AdminController extends Controller
                 }
                 $existants[] = [(float) $row['latitude'], (float) $row['longitude']];
 
+                // Créer (ou réutiliser) le libellé au premier point importé
+                if ($tagNom !== '' && !$tag) {
+                    $tag = PointVirageTag::firstOrCreate(
+                        ['competition_id' => $competition->id, 'nom' => $tagNom],
+                        ['couleur' => self::couleurProchainTag($competition)],
+                    );
+                }
+
                 $point = PointVirage::create([
                     'competition_id' => $competition->id,
                     'nom' => mb_substr($row['nom'], 0, 255),
                     'description' => $row['description'],
                     'latitude' => $row['latitude'],
                     'longitude' => $row['longitude'],
+                    'tag_id' => $tag?->id,
                 ]);
 
                 $crees[] = [
@@ -1193,7 +1206,7 @@ class AdminController extends Controller
                     'lat' => (float) $point->latitude,
                     'lng' => (float) $point->longitude,
                     'tag_id' => $point->tag_id,
-                    'tag' => null,
+                    'tag' => $tag ? $tag->only(['id', 'nom', 'couleur']) : null,
                 ];
             }
         });
@@ -1203,7 +1216,19 @@ class AdminController extends Controller
             'imported' => count($crees),
             'skipped' => $ignores,
             'points' => $crees,
+            'tag' => $tag ? $tag->only(['id', 'nom', 'couleur']) : null,
         ]);
+    }
+
+    /**
+     * Couleur attribuée à un libellé créé automatiquement lors d'un import,
+     * en alternant sur une palette selon le nombre de libellés existants.
+     */
+    private static function couleurProchainTag(Competition $competition): string
+    {
+        $palette = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+
+        return $palette[$competition->pointsVirageTags()->count() % count($palette)];
     }
 
     /**

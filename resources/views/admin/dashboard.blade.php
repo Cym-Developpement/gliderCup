@@ -1832,6 +1832,11 @@
                     <button onclick="activerModeEdition()" id="btnAjouterPoint" class="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                         Ajouter un point de virage
                     </button>
+                    <input type="text" id="importTagNom" maxlength="50" list="importTagNomSuggestions"
+                        placeholder="Libellé pour les points importés (optionnel)"
+                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        title="Ce libellé sera créé s'il n'existe pas et appliqué à tous les points du fichier importé">
+                    <datalist id="importTagNomSuggestions"></datalist>
                     <button type="button" onclick="document.getElementById('importPointsCup').click()" class="w-full px-3 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition">
                         Importer un fichier .cup
                     </button>
@@ -2211,6 +2216,9 @@
 
             const formData = new FormData();
             formData.append('fichier', file);
+            const tagInput = document.getElementById('importTagNom');
+            const tagNom = tagInput ? tagInput.value.trim() : '';
+            if (tagNom) formData.append('tag_nom', tagNom);
             input.value = ''; // permet de réimporter le même fichier
 
             try {
@@ -2222,8 +2230,16 @@
                 const result = await response.json();
                 if (result.success) {
                     (result.points || []).forEach(p => pointsVirage.push(p));
+                    if (result.tag) {
+                        if (!pointsVirageTags.some(t => String(t.id) === String(result.tag.id))) {
+                            pointsVirageTags.push(result.tag);
+                        }
+                        peuplerDatalistImportTags();
+                        if (tagInput) tagInput.value = '';
+                    }
                     rafraichirListePoints();
                     let msg = result.imported + ' point(s) de virage importé(s).';
+                    if (result.tag) msg += '\nLibellé « ' + result.tag.nom + ' » appliqué aux points importés.';
                     if (result.skipped) msg += '\n' + result.skipped + ' point(s) ignoré(s) (déjà un point à moins de 2 km).';
                     alert(msg);
                 } else {
@@ -2318,6 +2334,16 @@
                 console.error('Erreur chargement libellés:', err);
                 pointsVirageTags = [];
             }
+            peuplerDatalistImportTags();
+        }
+
+        // Proposer les libellés existants dans le champ libellé de l'import
+        function peuplerDatalistImportTags() {
+            const datalist = document.getElementById('importTagNomSuggestions');
+            if (!datalist) return;
+            datalist.innerHTML = pointsVirageTags
+                .map(t => `<option value="${escapeHtml(t.nom)}"></option>`)
+                .join('');
         }
 
         function ouvrirModalGestionTags() {
@@ -2332,6 +2358,7 @@
             // Met à jour le select du modal d'édition si ouvert, ainsi que les marqueurs
             const selectedId = document.getElementById('editPointTagId')?.value || '';
             peuplerSelectTags(selectedId);
+            peuplerDatalistImportTags();
             // Resynchroniser les tags sur les points existants (au cas où un tag a été modifié/supprimé)
             const tagsById = Object.fromEntries(pointsVirageTags.map(t => [String(t.id), t]));
             pointsVirage.forEach(p => {
