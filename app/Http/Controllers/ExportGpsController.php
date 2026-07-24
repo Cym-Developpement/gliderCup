@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Competition;
 use App\Models\PointVirage;
+use App\Models\PointVirageTag;
 use App\Services\GpsExport\GpsExportInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -39,10 +40,12 @@ class ExportGpsController extends Controller
 
     /**
      * Exporte les points de virage dans le format demandé.
+     * Le paramètre optionnel ?tag={id} limite l'export à un libellé,
+     * et ?tag=aucun aux points sans libellé.
      *
      * GET /export/gps/{format}
      */
-    public function export(string $format)
+    public function export(Request $request, string $format)
     {
         if (!isset(static::$formats[$format])) {
             abort(404, "Format d'export inconnu : $format");
@@ -52,12 +55,26 @@ class ExportGpsController extends Controller
         if (!$competition) {
             abort(404, 'Aucune compétition active.');
         }
-        $points = PointVirage::where('competition_id', $competition->id)->get();
+
+        $query = PointVirage::where('competition_id', $competition->id);
+        $nomExport = $competition->nom;
+
+        $tagParam = $request->query('tag');
+        if ($tagParam === 'aucun') {
+            $query->whereNull('tag_id');
+            $nomExport .= ' sans libellé';
+        } elseif ($tagParam !== null) {
+            $tag = PointVirageTag::where('competition_id', $competition->id)->findOrFail($tagParam);
+            $query->where('tag_id', $tag->id);
+            $nomExport .= ' ' . $tag->nom;
+        }
+
+        $points = $query->get();
 
         /** @var GpsExportInterface $exportClass */
         $exportClass = static::$formats[$format];
 
-        return $exportClass::export($points, $competition->nom);
+        return $exportClass::export($points, $nomExport);
     }
 
     public function downloadCarte()

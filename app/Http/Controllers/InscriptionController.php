@@ -55,6 +55,15 @@ class InscriptionController extends Controller
                 'tag' => $p->tag ? ['nom' => $p->tag->nom, 'couleur' => $p->tag->couleur] : null,
             ])->values();
 
+        // Libellés proposés en téléchargement .cup séparé sous la carte
+        $tagsExport = $competition->pointsVirageTags()
+            ->withCount('pointsVirage')
+            ->orderBy('nom')
+            ->get()
+            ->filter(fn($t) => $t->points_virage_count > 0)
+            ->values();
+        $nbPointsSansLibelle = $competition->pointsVirage()->whereNull('tag_id')->count();
+
         return view('inscription', [
             'competition' => $competition,
             'placesRestantes' => $placesRestantes,
@@ -66,6 +75,8 @@ class InscriptionController extends Controller
             'afficherRubanStats' => $afficherRubanStats,
             'pointsVirage' => $pointsVirage,
             'baseCoords' => $this->coordonneesAerodrome($competition),
+            'tagsExport' => $tagsExport,
+            'nbPointsSansLibelle' => $nbPointsSansLibelle,
         ]);
     }
 

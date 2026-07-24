@@ -331,6 +331,33 @@
                                 Plein écran
                             </button>
                         </div>
+                        <div class="mt-4">
+                            <p class="text-sm font-semibold text-blue-900 mb-2">Télécharger les points de virage pour votre GPS (format SeeYou .cup) :</p>
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{{ route('export.gps', 'cup') }}" class="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                    Tous les points ({{ count($pointsVirage) }})
+                                </a>
+                                @foreach($tagsExport as $tagExport)
+                                    @php
+                                        $hexTag = ltrim($tagExport->couleur ?? '', '#');
+                                        $lumTag = strlen($hexTag) === 6
+                                            ? (0.299 * hexdec(substr($hexTag, 0, 2)) + 0.587 * hexdec(substr($hexTag, 2, 2)) + 0.114 * hexdec(substr($hexTag, 4, 2))) / 255
+                                            : 1;
+                                        $couleurTexteTag = $lumTag < 0.5 ? '#ffffff' : '#000000';
+                                    @endphp
+                                    <a href="{{ route('export.gps', ['format' => 'cup', 'tag' => $tagExport->id]) }}"
+                                        class="px-3 py-2 text-sm rounded transition hover:opacity-80"
+                                        style="background: {{ $tagExport->couleur }}; color: {{ $couleurTexteTag }};">
+                                        {{ $tagExport->nom }} ({{ $tagExport->points_virage_count }})
+                                    </a>
+                                @endforeach
+                                @if(count($tagsExport) > 0 && $nbPointsSansLibelle > 0)
+                                    <a href="{{ route('export.gps', ['format' => 'cup', 'tag' => 'aucun']) }}" class="px-3 py-2 text-sm bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
+                                        Sans libellé ({{ $nbPointsSansLibelle }})
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
                     @else
                         <p class="text-blue-800">
                             Les points de virage seront bientôt disponibles (dans quelques semaines). Une carte sera mise à disposition avec les points de virage pour la compétition.
