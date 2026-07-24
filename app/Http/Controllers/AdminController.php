@@ -719,7 +719,9 @@ class AdminController extends Controller
         ]);
 
         // Créer un message pour chaque pilote et envoyer la notification
-        foreach ($pilotes as $pilote) {
+        $adminEmails = User::where('role', 'admin')->pluck('email')->filter()->all();
+
+        foreach ($pilotes->values() as $index => $pilote) {
             $message = Message::create([
                 'pilote_id' => $pilote->id,
                 'user_id' => Auth::id(),
@@ -728,7 +730,8 @@ class AdminController extends Controller
                 'lu' => false,
             ]);
 
-            $pilote->notify(new MessageEnvoye($message));
+            // Les admins sont en BCC du premier envoi uniquement : une seule copie par admin
+            $pilote->notify(new MessageEnvoye($message, $index === 0 ? $adminEmails : []));
         }
 
         return response()->json([

@@ -16,12 +16,15 @@ class MessageEnvoye extends Notification
 
     protected $message;
 
+    protected $bcc;
+
     /**
      * Create a new notification instance.
      */
-    public function __construct(Message $message)
+    public function __construct(Message $message, array $bcc = [])
     {
         $this->message = $message;
+        $this->bcc = $bcc;
     }
 
     /**
@@ -53,6 +56,10 @@ class MessageEnvoye extends Notification
                     ->line($this->message->message)
                     ->action('Voir mes messages', route('dashboard'))
                     ->line('Vous pouvez répondre à ce message en vous connectant à votre espace personnel.');
+
+        if (!empty($this->bcc)) {
+            $mail->bcc($this->bcc);
+        }
 
         // Ajouter la pièce jointe si elle existe
         if ($this->message->piece_jointe && Storage::disk('public')->exists($this->message->piece_jointe)) {
