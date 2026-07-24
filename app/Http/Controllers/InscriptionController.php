@@ -43,7 +43,18 @@ class InscriptionController extends Controller
             });
         
         $afficherRubanStats = env('SHOW_STATS_BANNER', false) || ($nombrePilotesInscrits > 10 && $nombrePlaneursInscrits > 3);
-        
+
+        // Points de virage affichés sur la carte publique (même tri que l'admin)
+        $pointsVirage = $competition->pointsVirage()->with('tag')->orderBy('nom')->get()
+            ->map(fn($p) => [
+                'nom' => $p->nom,
+                'description' => $p->description,
+                'image' => $p->image,
+                'lat' => (float) $p->latitude,
+                'lng' => (float) $p->longitude,
+                'tag' => $p->tag ? ['nom' => $p->tag->nom, 'couleur' => $p->tag->couleur] : null,
+            ])->values();
+
         return view('inscription', [
             'competition' => $competition,
             'placesRestantes' => $placesRestantes,
@@ -53,7 +64,35 @@ class InscriptionController extends Controller
             'nombrePilotesInscrits' => $nombrePilotesInscrits,
             'limitePlaneurs' => $limitePlaneurs,
             'afficherRubanStats' => $afficherRubanStats,
+            'pointsVirage' => $pointsVirage,
+            'baseCoords' => $this->coordonneesAerodrome($competition),
         ]);
+    }
+
+    /**
+     * Coordonnées [lat, lng] de l'aérodrome de la compétition, si connues
+     */
+    private function coordonneesAerodrome(Competition $competition): ?array
+    {
+        if (!$competition->code_aeroport) {
+            return null;
+        }
+
+        $filename = 'airports/' . strtoupper(trim($competition->code_aeroport)) . '.json';
+        if (!Storage::disk('private')->exists($filename)) {
+            return null;
+        }
+
+        $data = json_decode(Storage::disk('private')->get($filename), true);
+        if (isset($data['geometry']['coordinates'][0], $data['geometry']['coordinates'][1])) {
+            // Format GeoJSON : [longitude, latitude]
+            return [(float) $data['geometry']['coordinates'][1], (float) $data['geometry']['coordinates'][0]];
+        }
+        if (isset($data['latitude'], $data['longitude'])) {
+            return [(float) $data['latitude'], (float) $data['longitude']];
+        }
+
+        return null;
     }
 
     /**

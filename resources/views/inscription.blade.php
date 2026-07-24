@@ -56,6 +56,17 @@
         #adresse_suggestions .suggestion-item:last-child {
             border-bottom: none;
         }
+        /* Carte publique des points de virage en plein écran */
+        #cartePointsVirageWrapper.carte-pv-plein-ecran {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            border-radius: 0;
+            border: none;
+        }
+        #cartePointsVirageWrapper.carte-pv-plein-ecran #carte-points-virage-public {
+            height: 100% !important;
+        }
         .etape-formulaire {
             transition: all 0.3s ease;
         }
@@ -308,9 +319,23 @@
 
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-6 my-6 rounded">
                     <h3 class="text-xl font-semibold text-blue-900 mb-4">Points de virage</h3>
-                    <p class="text-blue-800">
-                        Les points de virage seront bientôt disponibles (dans quelques semaines). Une carte sera mise à disposition avec les points de virage pour la compétition.
-                    </p>
+                    @if(count($pointsVirage) > 0)
+                        <p class="text-blue-800 mb-4">
+                            Les {{ count($pointsVirage) }} points de virage de la compétition sont affichés sur la carte ci-dessous. Cliquez sur un marqueur pour voir le détail d'un point.
+                        </p>
+                        <div id="cartePointsVirageWrapper" class="relative rounded-lg overflow-hidden border border-blue-200 bg-white">
+                            <div id="carte-points-virage-public" style="height: 500px;"></div>
+                            <button type="button" id="btnPleinEcranPointsVirage" onclick="basculerPleinEcranPointsVirage()"
+                                class="bg-white text-gray-800 text-sm font-medium rounded shadow border border-gray-300 hover:bg-gray-100 transition px-3 py-2"
+                                style="position: absolute; top: 12px; right: 12px; z-index: 1001;">
+                                Plein écran
+                            </button>
+                        </div>
+                    @else
+                        <p class="text-blue-800">
+                            Les points de virage seront bientôt disponibles (dans quelques semaines). Une carte sera mise à disposition avec les points de virage pour la compétition.
+                        </p>
+                    @endif
                 </div>
             </div>
             </div>
@@ -2037,6 +2062,176 @@
         </div>
         <div id="carte-plein-ecran" class="flex-1 w-full" style="height: calc(100vh - 64px);"></div>
     </div>
+
+    <!-- Carte publique des points de virage (visualisation uniquement) -->
+    <script>
+        (function() {
+            const pointsViragePublics = @json($pointsVirage);
+            const basePointsVirage = @json($baseCoords);
+            let cartePV = null;
+
+            if (!pointsViragePublics.length) return;
+
+            function pvEscapeHtml(str) {
+                return String(str ?? '').replace(/[&<>"']/g, c => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[c]);
+            }
+
+            // Couleur de texte lisible sur un fond hex (#RRGGBB)
+            function pvTextColorForBg(hex) {
+                if (!hex || hex.length !== 7) return '#000';
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                return l < 0.5 ? '#fff' : '#000';
+            }
+
+            // Calcul de la distance en km (Haversine)
+            function pvDistanceKm(lat1, lng1, lat2, lng2) {
+                const R = 6371;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLng = (lng2 - lng1) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            }
+
+            function chargerLeafletPV() {
+                return new Promise((resolve) => {
+                    if (typeof L !== 'undefined') {
+                        resolve(L);
+                        return;
+                    }
+                    if (!document.querySelector('link[href*="leaflet.css"]')) {
+                        const leafletCSS = document.createElement('link');
+                        leafletCSS.rel = 'stylesheet';
+                        leafletCSS.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                        document.head.appendChild(leafletCSS);
+                    }
+                    const leafletScript = document.createElement('script');
+                    leafletScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    leafletScript.onload = () => {
+                        delete L.Icon.Default.prototype._getIconUrl;
+                        L.Icon.Default.mergeOptions({
+                            iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+                            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                        });
+                        resolve(L);
+                    };
+                    document.head.appendChild(leafletScript);
+                });
+            }
+
+            // Marqueur identique à celui de la carte admin (numéro + couleur du libellé)
+            function creerMarqueurPV(point, numero) {
+                const couleur = point.tag && point.tag.couleur ? point.tag.couleur : null;
+                const iconUrl = couleur
+                    ? `/img/marker/${numero}?couleur=${encodeURIComponent(couleur)}`
+                    : `/img/marker/${numero}`;
+                const icon = L.icon({
+                    iconUrl,
+                    iconSize: [70, 60],
+                    iconAnchor: [35, 30],
+                    popupAnchor: [0, -30],
+                });
+                const dist = basePointsVirage
+                    ? pvDistanceKm(basePointsVirage[0], basePointsVirage[1], point.lat, point.lng).toFixed(1)
+                    : null;
+                const tagHtml = point.tag
+                    ? `<br><span style="display:inline-block;padding:1px 6px;border-radius:9999px;background:${point.tag.couleur};color:${pvTextColorForBg(point.tag.couleur)};font-size:11px;font-weight:600;">${pvEscapeHtml(point.tag.nom)}</span>`
+                    : '';
+                const descHtml = point.description
+                    ? `<br><span style="font-size:12px;color:#4b5563;">${pvEscapeHtml(point.description)}</span>`
+                    : '';
+                const imageHtml = point.image
+                    ? `<br><img src="/${point.image}" alt="${pvEscapeHtml(point.nom)}" style="margin-top:4px;max-height:90px;border-radius:4px;">`
+                    : '';
+                L.marker([point.lat, point.lng], { icon }).addTo(cartePV)
+                    .bindPopup(`<b>#${numero} ${pvEscapeHtml(point.nom)}</b>${tagHtml}<br>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${dist ? '<br>' + dist + ' km de la base' : ''}${descHtml}${imageHtml}`);
+            }
+
+            async function initCartePointsVirage() {
+                if (cartePV) return;
+                const L = await chargerLeafletPV();
+
+                const center = basePointsVirage || [46.6, 2.5];
+                cartePV = L.map('carte-points-virage-public', { scrollWheelZoom: false }).setView(center, basePointsVirage ? 11 : 6);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
+                }).addTo(cartePV);
+
+                // Tuiles aéronautiques OpenAIP par-dessus OSM
+                L.tileLayer('/api/openaip/tiles/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="https://www.openaip.net">openAIP Data (CC-BY-NC)</a>',
+                    minZoom: 4,
+                    maxZoom: 14,
+                    opacity: 0.7,
+                    tileSize: 256,
+                    detectRetina: true
+                }).addTo(cartePV);
+
+                if (basePointsVirage) {
+                    L.marker(basePointsVirage).addTo(cartePV).bindPopup('Aérodrome de la compétition');
+                }
+
+                pointsViragePublics.forEach((p, i) => creerMarqueurPV(p, i + 1));
+
+                // Cadrer la carte sur l'ensemble des points
+                const bounds = L.latLngBounds(pointsViragePublics.map(p => [p.lat, p.lng]));
+                if (basePointsVirage) bounds.extend(basePointsVirage);
+                cartePV.fitBounds(bounds.pad(0.15));
+
+                setTimeout(() => cartePV.invalidateSize(), 200);
+            }
+
+            window.basculerPleinEcranPointsVirage = function() {
+                const wrapper = document.getElementById('cartePointsVirageWrapper');
+                const btn = document.getElementById('btnPleinEcranPointsVirage');
+                if (!wrapper) return;
+                const pleinEcran = wrapper.classList.toggle('carte-pv-plein-ecran');
+                document.body.style.overflow = pleinEcran ? 'hidden' : '';
+                if (btn) btn.textContent = pleinEcran ? 'Quitter le plein écran' : 'Plein écran';
+                if (cartePV) {
+                    // Le zoom molette n'est actif qu'en plein écran, pour ne pas bloquer le défilement de la page
+                    if (pleinEcran) cartePV.scrollWheelZoom.enable();
+                    else cartePV.scrollWheelZoom.disable();
+                    setTimeout(() => cartePV.invalidateSize(), 150);
+                }
+            };
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const wrapper = document.getElementById('cartePointsVirageWrapper');
+                    if (wrapper && wrapper.classList.contains('carte-pv-plein-ecran')) {
+                        window.basculerPleinEcranPointsVirage();
+                    }
+                }
+            });
+
+            // N'initialiser la carte que lorsque la section approche de l'écran
+            document.addEventListener('DOMContentLoaded', function() {
+                const el = document.getElementById('carte-points-virage-public');
+                if (!el) return;
+                if ('IntersectionObserver' in window) {
+                    const observer = new IntersectionObserver((entries) => {
+                        if (entries.some(entry => entry.isIntersecting)) {
+                            observer.disconnect();
+                            initCartePointsVirage();
+                        }
+                    }, { rootMargin: '300px' });
+                    observer.observe(el);
+                } else {
+                    initCartePointsVirage();
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
 
