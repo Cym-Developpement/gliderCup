@@ -38,6 +38,7 @@ bootstrap/cache/
 /work/
 /import-club/
 /analyse/
+/public/live/
 
 # Composer
 /composer.phar
